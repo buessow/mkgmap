@@ -4,6 +4,7 @@ OUT_DIR = out
 STYLE_DIR = my-style
 STYLE_FILES = $(wildcard $(STYLE_DIR)/*)
 TYP_FILES = typ-files/20011.txt typ-files/sameOrder.txt
+ROOT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 OSMOSIS_VERSION = 0.49.2
 OSMOSIS = osmosis-$(OSMOSIS_VERSION)
@@ -106,6 +107,7 @@ $(WORK_DIR)/%/split-contour: $(WORK_DIR)/%-contour.osm.pbf $(SPLITTER)/splitter.
 # id=$$(echo $$((20000000 + 0x$$(sha1 -s $$country | cut -c1-8) % 100000))); \
 
 $(OUT_DIR)/osm-oa-%.img: $(WORK_DIR)/%/split $(WORK_DIR)/%/split-contour my.cfg $(MKGMAP)/mkgmap.jar $(STYLE_FILES) $(TYP_FILES)
+	echo "Root; $(ROOT_DIR)"
 	@mkdir -p $(OUT_DIR); \
 	country=$$(basename $@ .img | sed 's/osm-oa-//'); \
 	country3=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:\(...\):..../\1/p"); \
@@ -113,9 +115,9 @@ $(OUT_DIR)/osm-oa-%.img: $(WORK_DIR)/%/split $(WORK_DIR)/%/split-contour my.cfg 
 	id="20$${dialcode}00"; \
 	fid=1$$dialcode; \
 	cmd="cd $(WORK_DIR)/$$country; \
-		java -Xms5g -Xmx16g -XX:+UseParallelGC -Dlog.config=../../logging.properties -jar ../../$(MKGMAP)/mkgmap.jar \
-			--style-file=../../$(STYLE_DIR) \
-			--read-config=../../my.cfg \
+		java -Xms5g -Xmx16g -XX:+UseParallelGC -Dlog.config=../../logging.properties -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
+			--style-file=$(ROOT_DIR)/$(STYLE_DIR) \
+			--read-config=$(ROOT_DIR)/my.cfg \
 			--mapname=$$id \
 			--country-name=$$country \
 			--country-abbr=$$country3 \
@@ -128,7 +130,7 @@ $(OUT_DIR)/osm-oa-%.img: $(WORK_DIR)/%/split $(WORK_DIR)/%/split-contour my.cfg 
 			--overview-mapnumber=$$id \
 			--read-config=template.args \
 			--read-config=contour/template.args \
-			$(patsubst %,../../%,$(TYP_FILES)) \
+			$(patsubst %,$(ROOT_DIR)/%,$(TYP_FILES)) \
 			"; \
 	echo "($$cmd)"; \
 	bash -c "$$cmd"; \
