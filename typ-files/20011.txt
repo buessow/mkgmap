@@ -1573,7 +1573,7 @@ CustomColor=No
 Type=0x02
 UseOrientation=N
 LineWidth=5
-BorderWidth=1
+BorderWidth=2
 Xpm="0 0 2 0"
 "1 c #BDCAD5"
 "2 c #FF3000"
