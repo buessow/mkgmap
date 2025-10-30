@@ -5,3 +5,6 @@ mkgmap-r*/*
 splitter-r*/*
 osmosis-*/*
 *.swp
+out
+work
+in
