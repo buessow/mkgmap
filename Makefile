@@ -24,11 +24,14 @@ COUNTRY_CODES = \
 	luxembourg:LUX:0352 \
 	netherlands:NLD:0031 \
 	poland:POL:0048 \
+	portugal:PRT:0035 \
+	romania:ROU:0040 \
 	slovakia:SVK:0421 \
 	slovenia:SVN:0386 \
+	spain:ESP:0034 \
 	switzerland:CHE:0041
 
-COUNTRIES = austria germany france italy liechtenstein switzerland
+COUNTRIES = austria germany france italy liechtenstein spain switzerland
 
 # Convert country name to ISO code
 country_to_iso = $(word 2,$(subst :, ,$(filter $(1):%,$(COUNTRY_CODES))))
@@ -36,10 +39,10 @@ country_to_iso = $(word 2,$(subst :, ,$(filter $(1):%,$(COUNTRY_CODES))))
 # Convert ISO code to country name
 iso_to_country = $(word 1,$(subst :, ,$(filter %:$(1),$(COUNTRY_CODES))))
 
-# Example usage:
-%.foo:
+%.defined:
 	country=$(basename $@ .foo); \
 	country3=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:\(...\):..../\1/p"); \
+	if [ -z "$$country3" ]; then echo "Error: No ISO code found for country '$$country'." >&2; exit 1; fi; \
 	echo $$country3
 
 
@@ -67,7 +70,7 @@ $(IN_DIR)/%-latest.osm.pbf:
 	rm -f $@
 	wget --directory-prefix=$(IN_DIR) https://download.geofabrik.de/europe/$(notdir $@)
 
-$(WORK_DIR)/%-contour.osm.pbf:
+$(WORK_DIR)/%-contour.osm.pbf: %.defined
 	@country=$$(basename $@ -contour.osm.pbf); \
 	country3=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:\(...\):..../\1/p"); \
 	$(MAKE) $(IN_DIR)/Hoehendaten_Freizeitkarte_$$country3.osm.pbf; \
@@ -75,7 +78,6 @@ $(WORK_DIR)/%-contour.osm.pbf:
 
 $(IN_DIR)/Hoehendaten_Freizeitkarte_%.osm.pbf:
 	wget --directory-prefix=$(IN_DIR) http://develop.freizeitkarte-osm.de/ele_20_100_500/$(notdir $@)
-	@cp $< $@
 
 # Unused
 $(WORK_DIR)/%-filtered.osm.pbf: $(IN_DIR)/%-latest.osm.pbf osmosis.args
@@ -84,7 +86,7 @@ $(WORK_DIR)/%-filtered.osm.pbf: $(IN_DIR)/%-latest.osm.pbf osmosis.args
 	$cmd
 
 #$(WORK_DIR)/%/split: $(WORK_DIR)/%-filtered.osm.pbf $(SPLITTER) Makefile
-$(WORK_DIR)/%/split: $(IN_DIR)/%-latest.osm.pbf $(SPLITTER)/splitter.jar
+$(WORK_DIR)/%/split: $(IN_DIR)/%-latest.osm.pbf $(SPLITTER)/splitter.jar %.defined
 	@country=$$(basename $$(dirname $@) | sed 's/osm-oa-//'); \
 	country3=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:\(...\):..../\1/p"); \
 	dialcode=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:...:\(....\)/\1/p"); \
@@ -92,9 +94,9 @@ $(WORK_DIR)/%/split: $(IN_DIR)/%-latest.osm.pbf $(SPLITTER)/splitter.jar
 	cmd="java -jar $(SPLITTER)/splitter.jar --mapid=$$id --output-dir=$(dir $@) $<"; \
 	echo "$$cmd"; \
 	$$cmd
-	touch $(dir $@)/split
+	touch $(dir $@)split
 
-$(WORK_DIR)/%/split-contour: $(WORK_DIR)/%-contour.osm.pbf $(SPLITTER)/splitter.jar
+$(WORK_DIR)/%/split-contour: $(WORK_DIR)/%-contour.osm.pbf $(SPLITTER)/splitter.jar %.defined
 	@country=$$(basename $$(dirname $@) | sed 's/osm-oa-//'); \
 	country3=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:\(...\):..../\1/p"); \
 	dialcode=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:...:\(....\)/\1/p"); \
@@ -104,10 +106,7 @@ $(WORK_DIR)/%/split-contour: $(WORK_DIR)/%-contour.osm.pbf $(SPLITTER)/splitter.
 	$$cmd
 	touch $(dir $@)/split-contour
 
-# id=$$(echo $$((20000000 + 0x$$(sha1 -s $$country | cut -c1-8) % 100000))); \
-
-$(OUT_DIR)/osm-oa-%.img: $(WORK_DIR)/%/split $(WORK_DIR)/%/split-contour my.cfg $(MKGMAP)/mkgmap.jar $(STYLE_FILES) $(TYP_FILES)
-	echo "Root; $(ROOT_DIR)"
+$(OUT_DIR)/osm-oa-%.img: $(WORK_DIR)/%/split $(WORK_DIR)/%/split-contour my.cfg $(MKGMAP)/mkgmap.jar $(STYLE_FILES) $(TYP_FILES) %.defined
 	@mkdir -p $(OUT_DIR); \
 	country=$$(basename $@ .img | sed 's/osm-oa-//'); \
 	country3=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:\(...\):..../\1/p"); \
@@ -115,7 +114,7 @@ $(OUT_DIR)/osm-oa-%.img: $(WORK_DIR)/%/split $(WORK_DIR)/%/split-contour my.cfg 
 	id="20$${dialcode}00"; \
 	fid=1$$dialcode; \
 	cmd="cd $(WORK_DIR)/$$country; \
-		java -Xms5g -Xmx16g -XX:+UseParallelGC -Dlog.config=../../logging.properties -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
+		java -Xms5g -Xmx16g -XX:+UseParallelGC -Dlog.config=$(ROOT_DIR)/logging.properties -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
 			--style-file=$(ROOT_DIR)/$(STYLE_DIR) \
 			--read-config=$(ROOT_DIR)/my.cfg \
 			--mapname=$$id \
@@ -178,7 +177,8 @@ cleanall: clean
 	rm -rf $(SPLITTER)
 	rm -rf $(MKGMAP)
 
-.PHONY: clean cleanall
+.PHONY: clean cleanall %.defined
+.SECONDARY:
 .PRECIOUS: $(IN_DIR)/% $(SPLITTER)/splitter.jar $(MKGMAP)/mkgmap.jar
 .PRECIOUS: $(WORK_DIR)/%/split $(WORK_DIR)/%/split-contour
 .PRECIOUS: $(OUT_DIR)/%.img
