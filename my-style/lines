@@ -121,8 +121,8 @@ route=bicycle {
     set mkgmap:label:1='${ref|highway-symbol:round}';
     set mkgmap:bicycle=yes;
 }
-route=bicycle & mkgmap:unpaved=0 { delete highway } [0x19 road_class=0 resolution 18]
-route=bicycle { delete highway } [0x0b road_class=0 resolution 18]
+route=bicycle & mkgmap:unpaved=0 { delete highway } [0x19 road_class=0 resolution 20]
+route=bicycle { delete highway } [0x0b road_class=0 resolution 20]
 
 
 leisure=track & area!=yes {name '${name} (${sport})' | '${sport}'} [0x30 resolution 22]
@@ -275,7 +275,7 @@ barrier=wall | barrier=fence | barrier=hedge | barrier=ditch [0x10012 resolution
 
 route=ferry & (toll=no | toll=false) {set mkgmap:toll=no}
 route=ferry {set mkgmap:numbers=false; set mkgmap:ferry=1; add mkgmap:toll=yes}
-route=ferry & (motorcar=no | motor_vehicle=no) [0x1b road_class=0 road_speed=0 resolution 23]
+route=ferry & (motorcar=no | motor_vehicle=no) [0x1b road_class=0 road_speed=0 resolution 21]
 route=ferry [0x1a road_class=3 road_speed=0 resolution 19]
 
 (waterway=river | waterway=stream | waterway=rapids | waterway=waterfall) {add mkgmap:has-direction=true}

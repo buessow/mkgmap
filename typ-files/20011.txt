@@ -2001,22 +2001,15 @@ CustomColor=No
 [_line]
 Type=0x1a
 UseOrientation=N
-Xpm="32 9 2  1"
-"! c #39FF00"
+Xpm="32 2 2  1"
+"! c #0000B4"
 "  c none"
-"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-"                                "
-"                                "
-"                                "
-"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+"    !!!!    !!!!    !!!!    !!!!"
+"    !!!!    !!!!    !!!!    !!!!"
 ;12345678901234567890123456789012
-String1=0x04,mtb route
-String2=0x03,mtb route
-String3=0x02,MTB Route
+String1=0x04,ferry
+String2=0x03,veerpont
+String3=0x02,Faehre
 ExtendedLabels=Y
 FontStyle=SmallFont
 CustomColor=DayAndNight
@@ -2028,33 +2021,15 @@ NightcustomColor:#FFFFFF
 [_line]
 Type=0x1b
 UseOrientation=N
-Xpm="32 20 2  1"
+Xpm="32 2 2  1"
 "! c #0000B4"
 "  c none"
-"                                "
-"                                "
-"                                "
 "    !!      !!      !!      !!  "
 "    !!      !!      !!      !!  "
-"                                "
-"                                "
-"                                "
-"                                "
-"                                "
-"                                "
-"                                "
-"                                "
-"                                "
-"                                "
-"                                "
-"                                "
-"                                "
-"                                "
-"                                "
 ;12345678901234567890123456789012
 String1=0x04,ferry
 String2=0x03,veerpont
-String3=0x02,F�hre
+String3=0x02,Faehre
 ExtendedLabels=Y
 FontStyle=SmallFont
 CustomColor=Day
