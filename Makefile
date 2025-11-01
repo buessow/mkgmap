@@ -169,11 +169,11 @@ all: $(foreach country,$(COUNTRIES),$(OUT_DIR)/osm-oa-$(country).img)
 	cp $< $@
 
 clean:
-	rm -rf $(WORK_DIR)
-	rm -rf $(OUT_DIR)
+	rm -rf $(WORK_DIR)/*
+	rm -rf $(OUT_DIR)/*
 
 cleanall: clean
-	rm -rf $(IN_DIR)
+	rm -rf $(IN_DIR)/*
 	rm -rf $(SPLITTER)
 	rm -rf $(MKGMAP)
 
