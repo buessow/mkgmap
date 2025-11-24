@@ -157,10 +157,14 @@ $(WORK_DIR)/swissalti3d_all.tif:
 $(IN_DIR)/skitouren_2056.gpkg.zip:
 	wget --directory-prefix=$(IN_DIR) https://data.geo.admin.ch/ch.swisstopo-karto.skitouren/skitouren/skitouren_2056.gpkg.zip
 
-$(WORK_DIR)/swiss-skitouring/ski_network_2056.osm: $(IN_DIR)/skitouren_2056.gpkg.zip
+
+%.osm: %.gpkg
+	$(PYTHON3) -m ogr2osm -o $@ $<
+
+
+$(WORK_DIR)/swiss-skitouring/ski_network_2056.gpkg: $(IN_DIR)/skitouren_2056.gpkg.zip
 	@mkdir -p $(WORK_DIR)/swiss-skitouring
 	unzip -u $(IN_DIR)/skitouren_2056.gpkg.zip -d $(WORK_DIR)/swiss-skitouring
-	$(PYTHON3) -m ogr2osm  -o $(WORK_DIR)/swiss-skitouring/ski_network_2056.osm $(WORK_DIR)/swiss-skitouring/ski_network_2056.gpkg
 
 $(OUT_DIR)/swiss-skitouring.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056.osm topo/topo.cfg topo/topo-typ.txt $(wildcard topo/styles/*)
 	@mkdir -p $(OUT_DIR)
@@ -170,6 +174,10 @@ $(OUT_DIR)/swiss-skitouring.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056.o
 		    -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
 			--style-file=$(ROOT_DIR)/topo/style \
 			--read-config=$(ROOT_DIR)/topo/topo.cfg \
+			--mapname=30001001 \
+			--description=Outabout\ Swiss\ Ski\ Routes \
+			--overview-mapname=RB_OUTABOUT_SKI_ROUTES \
+			--overview-mapnumber=30001003 \
 			$(ROOT_DIR)/topo/topo-typ.txt \
 			ski_network_2056.osm \
 			"; \
@@ -178,6 +186,27 @@ $(OUT_DIR)/swiss-skitouring.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056.o
 	bash -c "$$cmd"; \
 	mv $(WORK_DIR)/swiss-skitouring/gmapsupp.img $(OUT_DIR)/swiss-skitouring.img
 
+$(OUT_DIR)/%.img: $(WORK_DIR)/swiss-skitouring/%.osm topo/topo.cfg topo/topo-typ.txt $(wildcard topo/styles/*)
+	@mkdir -p $(OUT_DIR)
+	@mkdir -p $(WORK_DIR)/swiss-skitouring
+	@cmd="cd $(WORK_DIR)/swiss-skitouring; \
+		java -Xms5g -Xmx16g -XX:+UseParallelGC -Dlog.config=$(ROOT_DIR)/logging.properties \
+		    -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
+			--style-file=$(ROOT_DIR)/topo/style \
+			--read-config=$(ROOT_DIR)/topo/topo.cfg \
+			--mapname=30001003 \
+			--description=Outabout\ Slope30 \
+			--overview-mapname=RB_OUTABOUT_SKI_SLOPE30 \
+			--overview-mapnumber=30001003 \
+			$(ROOT_DIR)/$< \
+			$(ROOT_DIR)/topo/topo-typ.txt \
+			"; \
+	cmd=$$(echo $$cmd | sed 's/  */ /g'); \
+	echo "($$cmd)"; \
+	bash -c "$$cmd"; \
+	mv $(WORK_DIR)/swiss-skitouring/gmapsupp.img $@
+
+skitouring: $(OUT_DIR)/swiss-skitouring.img $(OUT_DIR)/swiss-skitouring-steep.img
 
 all: $(foreach country,$(COUNTRIES),$(OUT_DIR)/osm-oa-$(country).img)
 

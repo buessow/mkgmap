@@ -46,6 +46,15 @@ def size_mib(path):
 
 def run_step(label, alg_id, params, output_key='OUTPUT'):
     print(label)
+    out_path = None
+    if isinstance(params, dict):
+        # Prefer explicit output_key, then common 'OUTPUT'
+        candidate = params.get(output_key) or params.get('OUTPUT')
+        if isinstance(candidate, str):
+            out_path = candidate
+    if out_path and os.path.exists(out_path):
+        print(f"  skip (cache hit), size: {size_mib(out_path):.2f} MiB")
+        return {output_key: out_path}
     t0 = time.perf_counter()
     res = processing.run(alg_id, params, feedback=feedback)
     dt = time.perf_counter() - t0
@@ -54,63 +63,21 @@ def run_step(label, alg_id, params, output_key='OUTPUT'):
     print(f"  done in {dt:.2f}s, size: {out_size:.2f} MiB")
     return res
 
-
-# slope_params = {
-#     'INPUT': '/Volumes/T9/qgis-data/swissalti3d_2019_2504-1115_2_2056_5728.tif',
-#     'BAND': 1,
-#     'SCALE': 1,
-#     'AS_PERCENT': False,
-#     'COMPUTE_EDGES': False,
-#     'ZEVENBERGEN': False,
-#     'OPTIONS': None,
-#     'EXTRA': '',
-#     'OUTPUT': 'TEMPORARY_OUTPUT'
-# }
-# processing.run("gdal:slope", slope_params)
-
-
-# if not QgsApplication.processingRegistry().providerByName('native'):
-# QgsApplication.processingRegistry().addProvider(QgsNativeAlgorithms())
-
 feedback = QgsProcessingFeedback()
 
-# --- PARAMETERS, adjust as needed ---
-xyz_path = os.path.abspath("SWISSALTI3D_0.5_XYZ_CHLV95_LN02_2705_1207.xyz")
+OUTPUT_DIR = "work/swiss-skitouring"
+slope_path = os.path.join(OUTPUT_DIR, "slope.tif")
+slope_clean_path = os.path.join(OUTPUT_DIR, "slope30_clean.tif")
+binary_path = os.path.join(OUTPUT_DIR, "slope30.tif")
+polygon_path = os.path.join(OUTPUT_DIR, "steep_areas.gpkg")
+slope30_detailed_path = os.path.join(OUTPUT_DIR, "slope30_detailed.gpkg")
+slope30_path = os.path.join(OUTPUT_DIR, "slope30.gpkg")
 
-
-dem_path = "work/dem.tif"
-slope_path = "work/slope.tif"
-slope_clean_path = "work/slope30_clean.tif"
-binary_path = "work/slope30.tif"
-polygon_path = "work/steep_areas.gpkg"
-polygon_layer_name = "steep30"
 pixel_size = 2.0
 z_factor = 1.0
 slope_threshold = 30.0
-min_pixels = 20
+min_pixels = 30
 
-if not os.path.exists(xyz_path):
-    raise RuntimeError(f"XYZ file not found: {xyz_path}")
-
-# Import your XYZ as a vector (delimited text)
-# Use header names (X Y Z), point geometry, and LV95 CRS
-uri = (
-    f"file://{xyz_path}"
-    f"?encoding=UTF-8"
-    f"&delimiter=%20"
-    f"&useHeader=yes"
-    f"&xField=X&yField=Y&zField=Z"
-    f"&geomType=point"
-    f"&crs=EPSG:2056"
-    f"&decimalPoint=."
-)
-
-point_layer = QgsVectorLayer(uri, "XYZ Elevation Points", "delimitedtext")
-if not point_layer.isValid():
-    raise RuntimeError(f"Could not load XYZ points layer {uri}")
-QgsProject.instance().addMapLayer(point_layer)
-
-# Input DEM
 dem_out = QgsRasterLayer("work/swissalti3d_all.tif", "DEM")
 
 # 1) Slope
@@ -161,7 +128,7 @@ res4 = run_step(
     {
         'INPUT': binary_clean,
         'BAND': 1,
-        'FIELD': 'value',
+        'FIELD': 'slope30',
         'EIGHT_CONNECTEDNESS': False,
         'OUTPUT': f"{polygon_path}"
     }
@@ -174,12 +141,25 @@ res = run_step(
     "native:extractbyattribute",
     {
         "INPUT": poly_out,
-        "FIELD": "value",
+        "FIELD": "slope30",
         "OPERATOR": 0,            # 0 = "="
         "VALUE": 1,
-        "OUTPUT": "work/steep_areas_value1.gpkg"
+        "OUTPUT": slope30_detailed_path
     }
 )
+
+res_simpl = run_step(
+    "Simplify steep areas",
+    "native:simplifygeometries",
+    {
+        "INPUT": res["OUTPUT"],             # or poly_out
+        "METHOD": 0,                        # 0 = distance (Douglas–Peucker)
+        "TOLERANCE": 2.0,                   # meters; increase to simplify more
+        "OUTPUT": slope30_path
+    }
+)
+
+simplified = res_simpl["OUTPUT"]
 
 QgsProject.instance().clear()
 
