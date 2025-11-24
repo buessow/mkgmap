@@ -6,6 +6,10 @@ STYLE_FILES = $(wildcard $(STYLE_DIR)/*)
 TYP_FILES = typ-files/20011.txt typ-files/sameOrder.txt
 ROOT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
+QGIS_DIR = /Applications/QGIS.app/Contents/MacOS
+PYTHON3 = $(QGIS_DIR)/bin/python3
+GDALWARP = $(QGIS_DIR)/bin/gdalwarp
+
 OSMOSIS_VERSION = 0.49.2
 OSMOSIS = osmosis-$(OSMOSIS_VERSION)
 SPLITTER = splitter-r654
@@ -137,24 +141,36 @@ $(OUT_DIR)/osm-oa-%.img: $(WORK_DIR)/%/split $(WORK_DIR)/%/split-contour my.cfg 
 
 # TOPO / SKITOURING
 
+setup:
+	conda create -n ogr2osm -c conda-forge python=3.11 "gdal=3.6.4=*_11"
+	conda activate ogr2osm
+	python -m pip install --upgrade pip
+	python -m pip install ogr2osm
+	which python
+	python -c "from osgeo import gdal; print(gdal.__version__)"
+	ogr2osm -h
+
+
+$(WORK_DIR)/swissalti3d_all.tif:
+	$(GDALWARP) -t_srs EPSG:2056 -multi -r bilinear -overwrite /Volumes/T9/qgis-data/alt2/*.tif $@
+
 $(IN_DIR)/skitouren_2056.gpkg.zip:
 	wget --directory-prefix=$(IN_DIR) https://data.geo.admin.ch/ch.swisstopo-karto.skitouren/skitouren/skitouren_2056.gpkg.zip
-
 
 $(WORK_DIR)/swiss-skitouring/ski_network_2056.osm: $(IN_DIR)/skitouren_2056.gpkg.zip
 	@mkdir -p $(WORK_DIR)/swiss-skitouring
 	unzip -u $(IN_DIR)/skitouren_2056.gpkg.zip -d $(WORK_DIR)/swiss-skitouring
-	python3 -m ogr2osm  -o $(WORK_DIR)/swiss-skitouring/ski_network_2056.osm $(WORK_DIR)/swiss-skitouring/ski_network_2056.gpkg
+	$(PYTHON3) -m ogr2osm  -o $(WORK_DIR)/swiss-skitouring/ski_network_2056.osm $(WORK_DIR)/swiss-skitouring/ski_network_2056.gpkg
 
 $(OUT_DIR)/swiss-skitouring.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056.osm topo/topo.cfg topo/topo-typ.txt $(wildcard topo/styles/*)
 	@mkdir -p $(OUT_DIR)
 	@mkdir -p $(WORK_DIR)/swiss-skitouring
 	@cmd="cd $(WORK_DIR)/swiss-skitouring; \
-		java -Xms5g -Xmx16g -XX:+UseParallelGC -Dlog.config=../../logging.properties \
-		    -jar ../../$(MKGMAP)/mkgmap.jar \
-			--style-file=../../topo/style \
-			--read-config=../../topo/topo.cfg \
-			../../topo/topo-typ.txt \
+		java -Xms5g -Xmx16g -XX:+UseParallelGC -Dlog.config=$(ROOT_DIR)/logging.properties \
+		    -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
+			--style-file=$(ROOT_DIR)/topo/style \
+			--read-config=$(ROOT_DIR)/topo/topo.cfg \
+			$(ROOT_DIR)/topo/topo-typ.txt \
 			ski_network_2056.osm \
 			"; \
 	cmd=$$(echo $$cmd | sed 's/  */ /g'); \

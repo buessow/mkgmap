@@ -1,0 +1,5 @@
+export QGIS_PREFIX_PATH="/Applications/QGIS.app/Contents/MacOS"
+export PYTHONPATH="/Applications/QGIS.app/Contents/Resources/python:${PYTHONPATH}"
+export GDAL_DATA="/Applications/QGIS.app/Contents/Resources/gdal"
+export PROJ_LIB="/Applications/QGIS.app/Contents/Resources/proj"
+export DYLD_LIBRARY_PATH="/Applications/QGIS.app/Contents/Frameworks:/Applications/QGIS.app/Contents/MacOS/lib:${DYLD_LIBRARY_PATH}"
