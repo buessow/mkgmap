@@ -4,7 +4,7 @@ OUT_DIR = out
 STYLE_DIR = my-style
 STYLE_FILES = $(wildcard $(STYLE_DIR)/*)
 TYP_FILES = typ-files/20011.txt typ-files/sameOrder.txt
-ROOT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+ROOT_DIR := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
 QGIS_DIR = /Applications/QGIS.app/Contents/MacOS
 PYTHON3 = $(QGIS_DIR)/bin/python3
@@ -159,6 +159,7 @@ $(IN_DIR)/skitouren_2056.gpkg.zip:
 
 
 %.osm: %.gpkg
+	[ -f $@ ] && rm $@
 	$(PYTHON3) -m ogr2osm -o $@ $<
 
 
@@ -174,12 +175,16 @@ $(OUT_DIR)/swiss-skitouring.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056.o
 		    -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
 			--style-file=$(ROOT_DIR)/topo/style \
 			--read-config=$(ROOT_DIR)/topo/topo.cfg \
+			--draw-priority=10 \
 			--mapname=30001001 \
-			--description=Outabout\ Swiss\ Ski\ Routes \
+			--family-id=30001 \
+			--series-name=RB_S_OUTABOUT_SKI_ROUTES \
+			--area-name=RB_A_OUTABOUT_SKI_ROUTES \
+			--description=Outabout\ Swiss\ Skinetwork \
 			--overview-mapname=RB_OUTABOUT_SKI_ROUTES \
-			--overview-mapnumber=30001003 \
-			$(ROOT_DIR)/topo/topo-typ.txt \
+			--overview-mapnumber=30001001 \
 			ski_network_2056.osm \
+			$(ROOT_DIR)/topo/topo-typ.txt \
 			"; \
 	cmd=$$(echo $$cmd | sed 's/  */ /g'); \
 	echo "($$cmd)"; \
@@ -194,8 +199,11 @@ $(OUT_DIR)/%.img: $(WORK_DIR)/swiss-skitouring/%.osm topo/topo.cfg topo/topo-typ
 		    -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
 			--style-file=$(ROOT_DIR)/topo/style \
 			--read-config=$(ROOT_DIR)/topo/topo.cfg \
+			--family-id=30001 \
 			--mapname=30001003 \
-			--description=Outabout\ Slope30 \
+			--series-name=RB_S_OUTABOUT_SKI_SLOPE30 \
+			--area-name=RB_A_OUTABOUT_SKI_SLOPE30 \
+			--description=Outabout\ Swiss\ Slope30 \
 			--overview-mapname=RB_OUTABOUT_SKI_SLOPE30 \
 			--overview-mapnumber=30001003 \
 			$(ROOT_DIR)/$< \
