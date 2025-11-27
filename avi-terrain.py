@@ -1,12 +1,20 @@
+#!/Applications/QGIS.app/Contents/MacOS/bin/python3
+
+import argparse
 import os
 import sys
 import time
+
 # Set QGIS environment before importing qgis modules
 QGIS_CONTENTS = "/Applications/QGIS.app/Contents"
-os.environ.setdefault("QGIS_PREFIX_PATH", f"{QGIS_CONTENTS}/MacOS")
-os.environ.setdefault("QT_PLUGIN_PATH", f"{QGIS_CONTENTS}/PlugIns")
-os.environ.setdefault("GDAL_DATA", f"{QGIS_CONTENTS}/Resources/gdal")
-os.environ.setdefault("PROJ_LIB", f"{QGIS_CONTENTS}/Resources/proj")
+
+# FORCE QGIS paths. Do not use setdefault, as inherited shell vars (e.g. from Conda)
+# will conflict with QGIS libraries and cause 'Cannot find proj.db' or bad CRS.
+os.environ["QGIS_PREFIX_PATH"] = f"{QGIS_CONTENTS}/MacOS"
+os.environ["QT_PLUGIN_PATH"] = f"{QGIS_CONTENTS}/PlugIns"
+os.environ["GDAL_DATA"] = f"{QGIS_CONTENTS}/Resources/gdal"
+os.environ["PROJ_LIB"] = f"{QGIS_CONTENTS}/Resources/proj"
+
 # Ensure QGIS Python paths are available (core + plugins, includes 'processing')
 sys.path.append(f"{QGIS_CONTENTS}/Resources/python")
 sys.path.append(f"{QGIS_CONTENTS}/Resources/python/plugins")
@@ -19,23 +27,47 @@ from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
     QgsCoordinateTransformContext,
-    QgsProviderRegistry
+    QgsProviderRegistry,
+    QgsProcessingFeedback
 )
 from qgis import processing
 from qgis.core import QgsProcessingFeedback
 from qgis.analysis import QgsNativeAlgorithms
 
+# Global reference to hold the QGIS app
+qgs = None
 
-QgsApplication.setPrefixPath(os.environ["QGIS_PREFIX_PATH"], True)
-QgsApplication.setPluginPath(f"{QGIS_CONTENTS}/PlugIns/qgis")
 
-qgs = QgsApplication([], False)
-qgs.setPrefixPath(os.environ["QGIS_PREFIX_PATH"], True)
-qgs.initQgis()
-# Initialize Processing plugin and register native algorithms
-from processing.core.Processing import Processing
-Processing.initialize()
-import processing
+
+
+def init_qgis():
+    """Initialize QGIS once."""
+    global qgs
+    # Force environment variables
+    os.environ["QGIS_PREFIX_PATH"] = f"{QGIS_CONTENTS}/MacOS"
+    os.environ["QT_PLUGIN_PATH"] = f"{QGIS_CONTENTS}/PlugIns"
+    os.environ["GDAL_DATA"] = f"{QGIS_CONTENTS}/Resources/gdal"
+    os.environ["PROJ_LIB"] = f"{QGIS_CONTENTS}/Resources/proj"
+
+    QgsApplication.setPrefixPath(os.environ["QGIS_PREFIX_PATH"], True)
+    QgsApplication.setPluginPath(f"{QGIS_CONTENTS}/PlugIns/qgis")
+
+    qgs = QgsApplication([], False)
+    qgs.setPrefixPath(os.environ["QGIS_PREFIX_PATH"], True)
+    qgs.initQgis()
+
+    # Initialize Processing plugin and register native algorithms
+    from processing.core.Processing import Processing
+    Processing.initialize()
+    import processing
+
+# Initialize immediately
+init_qgis()
+
+pixel_size = 2.0
+z_factor = 1.0
+slope_threshold = 30.0
+min_pixels = 30
 
 def size_mib(path):
     try:
@@ -43,8 +75,9 @@ def size_mib(path):
     except Exception:
         return 0.0
 
-
 def run_step(label, alg_id, params, output_key='OUTPUT'):
+    feedback = QgsProcessingFeedback()
+
     print(label)
     out_path = None
     if isinstance(params, dict):
@@ -63,112 +96,135 @@ def run_step(label, alg_id, params, output_key='OUTPUT'):
     print(f"  done in {dt:.2f}s, size: {out_size:.2f} MiB")
     return res
 
-feedback = QgsProcessingFeedback()
 
-OUTPUT_DIR = "work/swiss-skitouring"
-slope_path = os.path.join(OUTPUT_DIR, "slope.tif")
-slope_clean_path = os.path.join(OUTPUT_DIR, "slope30_clean.tif")
-binary_path = os.path.join(OUTPUT_DIR, "slope30.tif")
-polygon_path = os.path.join(OUTPUT_DIR, "steep_areas.gpkg")
-slope30_detailed_path = os.path.join(OUTPUT_DIR, "slope30_detailed.gpkg")
-slope30_path = os.path.join(OUTPUT_DIR, "slope30.gpkg")
+parser = argparse.ArgumentParser(description="Process a single DEM raster file for steep slope analysis.")
+parser.add_argument("input_dem", help="Input DEM raster file path")
+parser.add_argument("output_osm", help="Output OSM file path")
+args = parser.parse_args()
 
-pixel_size = 2.0
-z_factor = 1.0
-slope_threshold = 30.0
-min_pixels = 30
+def process_dem(prefix, dem_path, osm_path_out):
+    # Derive intermediate paths based on input filename, placed in output directory
+    output_dir = os.path.dirname(osm_path_out) or "."
+    input_basename = os.path.splitext(os.path.basename(dem_path))[0]
+    base_out = os.path.join(output_dir, input_basename)
 
-dem_out = QgsRasterLayer("work/swissalti3d_all.tif", "DEM")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
 
-# 1) Slope
-res2 = run_step(
-    f"Compute Slope from {dem_out.source()}",
-    "qgis:slope",
-    {
-        'INPUT': dem_out,
-        'Z_FACTOR': z_factor,
-        'OUTPUT': slope_path
-    }
-)
-slope_out = res2['OUTPUT']
+    slope_path = f"{base_out}_slope.tif"
+    slope_clean_path = f"{base_out}_slope30_clean.tif"
+    binary_path = f"{base_out}_slope30.tif"
+    polygon_path = f"{base_out}_steep_areas.gpkg"
+    slope30_detailed_path = f"{base_out}_slope30_detailed.gpkg"
+    slope30_path = f"{base_out}_slope30.gpkg"
 
-# 2) Reclassify slope > threshold
-expr = f'"{slope_out}@1" > {slope_threshold}'
-res3 = run_step(
-    f"Reclassify slope > {slope_threshold}",
-    "qgis:rastercalculator",
-    {
-        'EXPRESSION': expr,
-        'LAYERS': [slope_out],
-        'CELLSIZE': pixel_size,
-        'EXTENT': dem_out.extent(),
-        'OUTPUT': binary_path
-    }
-)
-binary_out = res3['OUTPUT']
+    dem_out = QgsRasterLayer(dem_path, "DEM")
 
-# 3) Sieve
-res_clean = run_step(
-    f"Sieve binary raster > {min_pixels} pixels",
-    "gdal:sieve",
-    {
-        'INPUT': binary_out,
-        'BAND': 1,
-        'THRESHOLD': min_pixels,
-        'EIGHT_CONNECTEDNESS': False,
-        'OUTPUT': slope_clean_path
-    }
-)
-binary_clean = res_clean['OUTPUT']
 
-# 4) Polygonize
-res4 = run_step(
-    "Polygonize binary raster",
-    "gdal:polygonize",
-    {
-        'INPUT': binary_clean,
-        'BAND': 1,
-        'FIELD': 'slope30',
-        'EIGHT_CONNECTEDNESS': False,
-        'OUTPUT': f"{polygon_path}"
-    }
-)
-poly_out = res4['OUTPUT']
+    # 1) Slope
+    res2 = run_step(
+        f"{prefix} Compute Slope from {dem_out.source()}",
+        "qgis:slope",
+        {
+            'INPUT': dem_out,
+            'Z_FACTOR': z_factor,
+            'OUTPUT': slope_path
+        }
+    )
+    slope_out = res2['OUTPUT']
 
-# 5) Extract steep areas (value == 1)
-res = run_step(
-    "Extract steep areas",
-    "native:extractbyattribute",
-    {
-        "INPUT": poly_out,
-        "FIELD": "slope30",
-        "OPERATOR": 0,            # 0 = "="
-        "VALUE": 1,
-        "OUTPUT": slope30_detailed_path
-    }
-)
+    # 2) Reclassify slope > threshold
+    expr = f'"{slope_out}@1" > {slope_threshold}'
+    res3 = run_step(
+        f"{prefix} Reclassify slope > {slope_threshold}",
+        "qgis:rastercalculator",
+        {
+            'EXPRESSION': expr,
+            'LAYERS': [slope_out],
+            'CELLSIZE': pixel_size,
+            'EXTENT': dem_out.extent(),
+            'OUTPUT': binary_path
+        }
+    )
+    binary_out = res3['OUTPUT']
 
-res_simpl = run_step(
-    "Simplify steep areas",
-    "native:simplifygeometries",
-    {
-        "INPUT": res["OUTPUT"],             # or poly_out
-        "METHOD": 0,                        # 0 = distance (Douglas–Peucker)
-        "TOLERANCE": 2.0,                   # meters; increase to simplify more
-        "OUTPUT": slope30_path
-    }
-)
+    # 3) Sieve
+    res_clean = run_step(
+        f"{prefix} Sieve binary raster > {min_pixels} pixels",
+        "gdal:sieve",
+        {
+            'INPUT': binary_out,
+            'BAND': 1,
+            'THRESHOLD': min_pixels,
+            'EIGHT_CONNECTEDNESS': False,
+            'OUTPUT': slope_clean_path
+        }
+    )
+    binary_clean = res_clean['OUTPUT']
 
-simplified = res_simpl["OUTPUT"]
+    # 4) Polygonize
+    res4 = run_step(
+        f"{prefix} Polygonize binary raster",
+        "gdal:polygonize",
+        {
+            'INPUT': binary_clean,
+            'BAND': 1,
+            'FIELD': 'slope30',
+            'EIGHT_CONNECTEDNESS': False,
+            'OUTPUT': f"{polygon_path}"
+        }
+    )
+    poly_out = res4['OUTPUT']
 
-QgsProject.instance().clear()
+    # 5) Extract steep areas (value == 1)
+    res = run_step(
+        f"{prefix} Extract steep areas",
+        "native:extractbyattribute",
+        {
+            "INPUT": poly_out,
+            "FIELD": "slope30",
+            "OPERATOR": 0,            # 0 = "="
+            "VALUE": 1,
+            "OUTPUT": slope30_detailed_path
+        }
+    )
 
-# Drop Python refs so providers/rasters are destroyed before QGIS shuts down
-point_layer = None
-dem_out = None
-vl = None
-binary_out = None
+    res_simpl = run_step(
+        f"{prefix} Simplify steep areas",
+        "native:simplifygeometries",
+        {
+            "INPUT": res["OUTPUT"],             # or poly_out
+            "METHOD": 0,                        # 0 = distance (Douglas–Peucker)
+            "TOLERANCE": 2.0,                   # meters; increase to simplify more
+            "OUTPUT": slope30_path
+        }
+    )
 
-import gc
-gc.collect()
-qgs.exitQgis()
+    simplified = res_simpl["OUTPUT"]
+
+    # Convert to OSM using the same python binary
+    import subprocess
+    import shutil
+
+    # Run ogr2osm using the CURRENT python interpreter
+    cmd = [sys.executable, "-m", "ogr2osm", "-f", "-o", osm_path_out, simplified]
+
+    print(f"{prefix} ogr2osm -> {osm_path_out}")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print(f"ogr2osm failed:\n{result.stderr}", file=sys.stderr)
+
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("Usage: python avi-terrain.py <input_dem> <output_osm>")
+        sys.exit(1)
+
+    try:
+        process_dem("1/1", args.input_dem, args.output_osm)
+    except Exception as e:
+        print(f"Error processing {args.input_dem}: {e}", file=sys.stderr)
+
+    # Cleanup
+    if qgs:
+        qgs.exitQgis()

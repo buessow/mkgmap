@@ -80,6 +80,16 @@ def build_vrt_and_tif(files: List[str], vrt_path: str, out_tif: str) -> None:
     out_ds = None
 
 
+def process_chunk(msg, item, prefix, output_dir):
+    (rx, ry), files = item
+    name = f"{prefix}_{rx}-{ry}"
+    vrt_path = os.path.join(output_dir, f"{name}.vrt")
+    out_tif = os.path.join(output_dir, f"{name}.tif")
+    print(f"{msg} Merging group {rx},{ry} ({len(files)} tiles)")
+    build_vrt_and_tif(files, vrt_path, out_tif)
+    return 1
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Merge swissalti3d tiles into a 4x4 grid (16 mosaics).")
     parser.add_argument("input_dir", help="Directory containing swissalti3d *.tif tiles")
@@ -103,19 +113,11 @@ def main() -> None:
     chunks = to_chunks(tiles, args.width, args.height)
 
     total_outputs = 0
-    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from concurrent.futures import ProcessPoolExecutor, as_completed
 
-    def process_chunk(i, item):
-        (rx, ry), files = item
-        name = f"{args.prefix}_{rx}-{ry}"
-        vrt_path = os.path.join(args.output_dir, f"{name}.vrt")
-        out_tif = os.path.join(args.output_dir, f"{name}.tif")
-        print(f"Merging group ({i+1}/{len(chunks)}): {rx},{ry} ({len(files)} tiles)")
-        build_vrt_and_tif(files, vrt_path, out_tif)
-        return 1
-
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        futures = [executor.submit(process_chunk, i, item) for i, item in enumerate(chunks.items())]
+    with ProcessPoolExecutor(max_workers=4) as executor:
+        def msg(i): return f"{args.prefix}_{i+1:03}/{len(chunks):03}"
+        futures = [executor.submit(process_chunk, msg(i), item, args.prefix,args.output_dir) for i, item in enumerate(chunks.items())]
         for future in as_completed(futures):
             total_outputs += future.result()
 

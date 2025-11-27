@@ -158,9 +158,14 @@ $(IN_DIR)/skitouren_2056.gpkg.zip:
 	wget --directory-prefix=$(IN_DIR) https://data.geo.admin.ch/ch.swisstopo-karto.skitouren/skitouren/skitouren_2056.gpkg.zip
 
 
-%.osm: %.gpkg
-	[ -f $@ ] && rm $@
-	$(PYTHON3) -m ogr2osm -o $@ $<
+SWISS_SLOPE30_OSMS = $(patsubst %.tif,%.osm,$(wildcard swissalti3d-merged/*[0-9][0-9][0-9].tif))
+%.osm: %.tif
+	$(PYTHON3) avi-terrain.py $< $@
+
+slope30_osms: $(SWISS_SLOPE30_OSMS)
+
+print_slope30_osms:
+	echo $(SWISS_SLOPE30_OSMS)
 
 
 $(WORK_DIR)/swiss-skitouring/ski_network_2056.gpkg: $(IN_DIR)/skitouren_2056.gpkg.zip
@@ -191,7 +196,7 @@ $(OUT_DIR)/swiss-skitouring.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056.o
 	bash -c "$$cmd"; \
 	mv $(WORK_DIR)/swiss-skitouring/gmapsupp.img $(OUT_DIR)/swiss-skitouring.img
 
-$(OUT_DIR)/%.img: $(WORK_DIR)/swiss-skitouring/%.osm topo/topo.cfg topo/topo-typ.txt $(wildcard topo/styles/*)
+$(OUT_DIR)/swiss-slope30.img: $(SWISS_SLOPE30_OSMS) topo/topo.cfg topo/topo-typ.txt $(wildcard topo/styles/*)
 	@mkdir -p $(OUT_DIR)
 	@mkdir -p $(WORK_DIR)/swiss-skitouring
 	@cmd="cd $(WORK_DIR)/swiss-skitouring; \
@@ -206,7 +211,7 @@ $(OUT_DIR)/%.img: $(WORK_DIR)/swiss-skitouring/%.osm topo/topo.cfg topo/topo-typ
 			--description=Outabout\ Swiss\ Slope30 \
 			--overview-mapname=RB_OUTABOUT_SKI_SLOPE30 \
 			--overview-mapnumber=30001003 \
-			$(ROOT_DIR)/$< \
+			$(patsubst %,$(ROOT_DIR)/%,$(SWISS_SLOPE30_OSMS)) \
 			$(ROOT_DIR)/topo/topo-typ.txt \
 			"; \
 	cmd=$$(echo $$cmd | sed 's/  */ /g'); \
