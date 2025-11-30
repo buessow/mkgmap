@@ -150,6 +150,15 @@ setup:
 	python -c "from osgeo import gdal; print(gdal.__version__)"
 	ogr2osm -h
 
+SWISSALTI3D_RAW_DIR = swiss-alti3d-raw
+SWISSALTI3D_MERGED_DIR = swiss-alti3d
+
+$(SWISSALTI3D_RAW_DIR):
+	mkdir -p $@
+
+download-swissalti3d: swiss-alti3d-2m_urls.txt | $(SWISSALTI3D_RAW_DIR)
+	@total=$$(wc -l < $< | tr -d ' '); \
+	cat -n $< | xargs -n 2 -P 50 sh -c 'file="$(SWISSALTI3D_RAW_DIR)/$$(basename $$2)"; if [ ! -e "$$file" ]; then echo "Downloading [$$1/'"$$total"'] $$(basename $$2)"; wget -q --directory-prefix=$(SWISSALTI3D_RAW_DIR) --no-clobber $$2; fi' sh
 
 $(WORK_DIR)/swissalti3d_all.tif:
 	$(GDALWARP) -t_srs EPSG:2056 -multi -r bilinear -overwrite /Volumes/T9/qgis-data/alt2/*.tif $@
@@ -158,7 +167,7 @@ $(IN_DIR)/skitouren_2056.gpkg.zip:
 	wget --directory-prefix=$(IN_DIR) https://data.geo.admin.ch/ch.swisstopo-karto.skitouren/skitouren/skitouren_2056.gpkg.zip
 
 
-SWISS_SLOPE30_OSMS = $(patsubst %.tif,%.osm,$(wildcard swissalti3d-merged/*[0-9][0-9][0-9].tif))
+SWISS_SLOPE30_OSMS = $(patsubst %.tif,%.osm,$(wildcard $(SWISSALTI3D_MERGED_DIR)/*_alti3d.tif))
 %.osm: %.tif
 	$(PYTHON3) avi-terrain.py $< $@
 
@@ -167,12 +176,24 @@ slope30_osms: $(SWISS_SLOPE30_OSMS)
 print_slope30_osms:
 	echo $(SWISS_SLOPE30_OSMS)
 
+$(WORK_DIR)/swiss-skitouring/swiss-slope30.args: $(SWISS_SLOPE30_OSMS)
+	rm -f $@
+	@id=30003000; \
+	list='$^'; \
+	if [ -n "$$list" ]; then \
+		for file in $$list; do \
+			echo "mapname: $$id" >> $@; \
+			echo "input-file: $(ROOT_DIR)/$$file" >> $@; \
+			id=$$((id+1)); \
+		done; \
+	fi
+
 
 $(WORK_DIR)/swiss-skitouring/ski_network_2056.gpkg: $(IN_DIR)/skitouren_2056.gpkg.zip
 	@mkdir -p $(WORK_DIR)/swiss-skitouring
 	unzip -u $(IN_DIR)/skitouren_2056.gpkg.zip -d $(WORK_DIR)/swiss-skitouring
 
-$(OUT_DIR)/swiss-skitouring.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056.osm topo/topo.cfg topo/topo-typ.txt $(wildcard topo/styles/*)
+$(OUT_DIR)/swiss-ski-network.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056_updated.osm topo/topo.cfg topo/topo-typ.txt $(wildcard topo/style/*)
 	@mkdir -p $(OUT_DIR)
 	@mkdir -p $(WORK_DIR)/swiss-skitouring
 	@cmd="cd $(WORK_DIR)/swiss-skitouring; \
@@ -183,20 +204,20 @@ $(OUT_DIR)/swiss-skitouring.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056.o
 			--draw-priority=10 \
 			--mapname=30001001 \
 			--family-id=30001 \
-			--series-name=RB_S_OUTABOUT_SKI_ROUTES \
-			--area-name=RB_A_OUTABOUT_SKI_ROUTES \
-			--description=Outabout\ Swiss\ Skinetwork \
-			--overview-mapname=RB_OUTABOUT_SKI_ROUTES \
+			--series-name=RB_S_OUTABOUT_SKI_NETWORK \
+			--area-name=RB_A_OUTABOUT_SKI_NETWORK \
+			--description=Outabout\ Swiss\ Ski\ Network \
+			--overview-mapname=RB_OUTABOUT_SKI_NETWORK \
 			--overview-mapnumber=30001001 \
-			ski_network_2056.osm \
+			ski_network_2056_updated.osm \
 			$(ROOT_DIR)/topo/topo-typ.txt \
 			"; \
 	cmd=$$(echo $$cmd | sed 's/  */ /g'); \
 	echo "($$cmd)"; \
 	bash -c "$$cmd"; \
-	mv $(WORK_DIR)/swiss-skitouring/gmapsupp.img $(OUT_DIR)/swiss-skitouring.img
+	mv $(WORK_DIR)/swiss-skitouring/gmapsupp.img $(OUT_DIR)/swiss-ski-network.img
 
-$(OUT_DIR)/swiss-slope30.img: $(SWISS_SLOPE30_OSMS) topo/topo.cfg topo/topo-typ.txt $(wildcard topo/styles/*)
+$(OUT_DIR)/swiss-slope30.img: $(WORK_DIR)/swiss-skitouring/swiss-slope30.args topo/topo.cfg topo/topo-typ.txt $(wildcard topo/style/*)
 	@mkdir -p $(OUT_DIR)
 	@mkdir -p $(WORK_DIR)/swiss-skitouring
 	@cmd="cd $(WORK_DIR)/swiss-skitouring; \
@@ -204,14 +225,13 @@ $(OUT_DIR)/swiss-slope30.img: $(SWISS_SLOPE30_OSMS) topo/topo.cfg topo/topo-typ.
 		    -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
 			--style-file=$(ROOT_DIR)/topo/style \
 			--read-config=$(ROOT_DIR)/topo/topo.cfg \
-			--family-id=30001 \
-			--mapname=30001003 \
+			--family-id=30003 \
 			--series-name=RB_S_OUTABOUT_SKI_SLOPE30 \
 			--area-name=RB_A_OUTABOUT_SKI_SLOPE30 \
 			--description=Outabout\ Swiss\ Slope30 \
 			--overview-mapname=RB_OUTABOUT_SKI_SLOPE30 \
 			--overview-mapnumber=30001003 \
-			$(patsubst %,$(ROOT_DIR)/%,$(SWISS_SLOPE30_OSMS)) \
+			--read-config=$(ROOT_DIR)/$(WORK_DIR)/swiss-skitouring/swiss-slope30.args \
 			$(ROOT_DIR)/topo/topo-typ.txt \
 			"; \
 	cmd=$$(echo $$cmd | sed 's/  */ /g'); \
@@ -219,7 +239,7 @@ $(OUT_DIR)/swiss-slope30.img: $(SWISS_SLOPE30_OSMS) topo/topo.cfg topo/topo-typ.
 	bash -c "$$cmd"; \
 	mv $(WORK_DIR)/swiss-skitouring/gmapsupp.img $@
 
-skitouring: $(OUT_DIR)/swiss-skitouring.img $(OUT_DIR)/swiss-skitouring-steep.img
+skitouring: $(OUT_DIR)/swiss-ski-network.img $(OUT_DIR)/swiss-slope30.img
 
 all: $(foreach country,$(COUNTRIES),$(OUT_DIR)/osm-oa-$(country).img)
 
