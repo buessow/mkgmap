@@ -57,9 +57,11 @@ Xpm="32 32 2 1"
 
 
 [_line]
-Type=0x12
-String1=0x04,Skiroute
-UseOrientation=N
+Type=0x1f
+String=Skiroute
+ExtendedLabels=Y
+FontStyle=NoLabel (invisible)
+CustomColor=No
 Xpm="32 6 2  1"
 "! c #FF0000"
 "  c none"
@@ -70,7 +72,5 @@ Xpm="32 6 2  1"
 "              !!!!              "
 "            !!!!                "
 ;12345678901234567890123456789012
-ExtendedLabels=Y
-FontStyle=NoLabel (invisible)
-CustomColor=No
+
 [end]

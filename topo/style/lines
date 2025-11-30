@@ -1,4 +1,4 @@
-discipline=ski_snowshow_tour [0x12 resolution 22]
-discipline=ski_tour [0x12 resolution 22]
+discipline=ski_snowshow_tour [0x1f resolution 22]
+discipline=ski_tour [0x1f resolution 22]
 
 <finalize>

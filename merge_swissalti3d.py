@@ -43,11 +43,15 @@ def to_chunks(tiles: Dict[Tuple[int, int], str], width: int, height: int) -> Dic
 
     result: Dict[Tuple[int, int], List[str]] = {}
     for (x, y), file in tiles.items():
-        rx = ((x - x_min) // x_span) // width
-        rx = x_min + (rx * width * x_span)
-        ry = ((y - y_min) // y_span) // height
-        ry = y_min + (ry * height * y_span)
+        rxi = ((x - x_min) // x_span) // (len(x_vals) // width)
+        rx = x_min + (rxi * width * x_span)
+        ryi = ((y - y_min) // y_span) // (len(y_vals) // height)
+        ry = y_min + (ryi * height * y_span)
         result[(rx, ry)] = result.get((rx, ry), []) + [file]
+
+    unique_files = set(f for files in result.values() for f in files)
+    total_assigned = len(unique_files)
+    assert total_assigned == len(tiles), f"Total assigned tiles {total_assigned} != total tiles {len(tiles)}"
     return result
 
 
@@ -68,10 +72,11 @@ def build_vrt_and_tif(files: List[str], vrt_path: str, out_tif: str) -> None:
     print(f"  GTiff <- {out_tif}")
     translate_opts = gdal.TranslateOptions(
         creationOptions=[
-            "COMPRESS=DEFLATE",
-            "PREDICTOR=2",
-            "TILED=YES",
-            "BIGTIFF=IF_SAFER",
+            "COMPRESS=DEFLATE",     # deflate compression
+            "PREDICTOR=2",          # store horizontal deltas
+            "TILED=YES",            # tiled format rather than strip
+            "BIGTIFF=IF_SAFER",     # use bigtiff if safe
+            "NUM_THREADS=ALL_CPUS", # use all CPUs for parallel processing
         ]
     )
     out_ds = gdal.Translate(out_tif, vrt_path, options=translate_opts)
@@ -80,12 +85,15 @@ def build_vrt_and_tif(files: List[str], vrt_path: str, out_tif: str) -> None:
     out_ds = None
 
 
-def process_chunk(msg, item, prefix, output_dir):
+def process_chunk(i, item, prefix, output_dir):
     (rx, ry), files = item
-    name = f"{prefix}_{rx}-{ry}"
+    name = f"{i:03}_{rx}-{ry}_alti3d"
     vrt_path = os.path.join(output_dir, f"{name}.vrt")
     out_tif = os.path.join(output_dir, f"{name}.tif")
-    print(f"{msg} Merging group {rx},{ry} ({len(files)} tiles)")
+    if os.path.exists(out_tif):
+        print(f"  skip (exists): {out_tif}")
+        return 0
+    print(f"{i:03} Merging group {rx},{ry} ({len(files)} tiles)")
     build_vrt_and_tif(files, vrt_path, out_tif)
     return 1
 
@@ -117,7 +125,9 @@ def main() -> None:
 
     with ProcessPoolExecutor(max_workers=4) as executor:
         def msg(i): return f"{args.prefix}_{i+1:03}/{len(chunks):03}"
-        futures = [executor.submit(process_chunk, msg(i), item, args.prefix,args.output_dir) for i, item in enumerate(chunks.items())]
+        futures = []
+        for i, item in enumerate(sorted(chunks.items())):
+            futures.append(executor.submit(process_chunk, i, item, args.prefix, args.output_dir))
         for future in as_completed(futures):
             total_outputs += future.result()
 

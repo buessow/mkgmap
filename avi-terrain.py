@@ -93,7 +93,7 @@ def run_step(label, alg_id, params, output_key='OUTPUT'):
     dt = time.perf_counter() - t0
     out = res.get(output_key)
     out_size = size_mib(out) if isinstance(out, str) else 0.0
-    print(f"  done in {dt:.2f}s, size: {out_size:.2f} MiB")
+    print(f"{label}. Done in {dt:.2f}s, size: {out_size:.2f} MiB")
     return res
 
 
@@ -102,11 +102,13 @@ parser.add_argument("input_dem", help="Input DEM raster file path")
 parser.add_argument("output_osm", help="Output OSM file path")
 args = parser.parse_args()
 
-def process_dem(prefix, dem_path, osm_path_out):
+def process_dem(dem_path, osm_path_out):
     # Derive intermediate paths based on input filename, placed in output directory
     output_dir = os.path.dirname(osm_path_out) or "."
     input_basename = os.path.splitext(os.path.basename(dem_path))[0]
     base_out = os.path.join(output_dir, input_basename)
+
+    prefix = input_basename
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
@@ -220,10 +222,7 @@ if __name__ == "__main__":
         print("Usage: python avi-terrain.py <input_dem> <output_osm>")
         sys.exit(1)
 
-    try:
-        process_dem("1/1", args.input_dem, args.output_osm)
-    except Exception as e:
-        print(f"Error processing {args.input_dem}: {e}", file=sys.stderr)
+    process_dem(args.input_dem, args.output_osm)
 
     # Cleanup
     if qgs:
