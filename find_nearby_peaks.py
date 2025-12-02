@@ -4,30 +4,45 @@ import sys
 import os
 import socket
 
-# Configuration - Update these with your actual DB credentials
-DB_HOST = "outabout.cc"
-DB_NAME = "osm"
-DB_USER = "postgres"
-DB_PASS = "STFSquo0qsUCOD9"
-DB_PORT = "5432"
+try:
+    import db_config
+except ImportError:
+    print("Error: db_config.py not found. Please create it with DB credentials.")
+    sys.exit(1)
 
 # Search Configuration
 SEARCH_RADIUS_METERS = 100  # Distance to search for peaks
-OSM_FILE = "work/swiss-skitouring/ski_network_2056.osm"
-OUTPUT_OSM_FILE = "work/swiss-skitouring/ski_network_2056_updated.osm"
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Find and update peaks in OSM file.")
+    parser.add_argument(
+        "--osm-file",
+        type=str,
+        default="work/swiss-skitouring/ski_network_2056.osm",
+        help="Input OSM file path",
+    )
+    parser.add_argument(
+        "--output-osm-file",
+        type=str,
+        default="work/swiss-skitouring/ski_network_2056_updated.osm",
+        help="Output OSM file path",
+    )
+    return parser.parse_args()
+
+args = parse_args()
+OSM_FILE = args.osm_file
+OUTPUT_OSM_FILE = args.output_osm_file
 
 def get_db_connection():
     try:
-        # Force IPv4 resolution
-        host_ip = socket.gethostbyname(DB_HOST)
-        print(f"Resolved {DB_HOST} to {host_ip}")
-
+        # Make sure postgres supports IPv6
         conn = psycopg2.connect(
-            host=host_ip,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASS,
-            port=DB_PORT,
+            host=db_config.DB_HOST,
+            database=db_config.DB_NAME,
+            user=db_config.DB_USER,
+            password=db_config.DB_PASS,
+            port=db_config.DB_PORT,
             sslmode='require'
         )
         return conn

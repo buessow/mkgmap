@@ -66,9 +66,9 @@ LineWidth=0
 BorderWidth=0
 UseOrientation=Y
 Xpm="32 5 4  1"
-"! c #FF0000"
+"! c #FF5555"
 "  c none"
-"3 c #FF0000"
+"3 c #FF5555"
 "4 c none"
 "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 "!!!     !!!     !!!     !!!     "

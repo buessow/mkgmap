@@ -193,6 +193,12 @@ $(WORK_DIR)/swiss-skitouring/ski_network_2056.gpkg: $(IN_DIR)/skitouren_2056.gpk
 	@mkdir -p $(WORK_DIR)/swiss-skitouring
 	unzip -u $(IN_DIR)/skitouren_2056.gpkg.zip -d $(WORK_DIR)/swiss-skitouring
 
+$(WORK_DIR)/swiss-skitouring/ski_network_2056.osm: $(WORK_DIR)/swiss-skitouring/ski_network_2056.gpkg
+	ogr2osm --id=-2000000000 --positive-id -f -o $@ $<
+
+$(WORK_DIR)/swiss-skitouring/ski_network_2056_updated.osm: $(WORK_DIR)/swiss-skitouring/ski_network_2056.osm find_nearby_peaks.py db_config.py
+	$(PYTHON3) find_nearby_peaks.py --osm-file $< --output-osm-file $@
+
 $(OUT_DIR)/swiss-ski-network.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056_updated.osm topo/topo.cfg topo/topo-typ.txt $(wildcard topo/style/*)
 	@mkdir -p $(OUT_DIR)
 	@mkdir -p $(WORK_DIR)/swiss-skitouring

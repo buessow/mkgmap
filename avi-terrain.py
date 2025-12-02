@@ -65,7 +65,6 @@ def init_qgis():
 init_qgis()
 
 pixel_size = 2.0
-z_factor = 1.0
 slope_threshold = 30.0
 min_pixels = 30
 
@@ -75,10 +74,13 @@ def size_mib(path):
     except Exception:
         return 0.0
 
-def run_step(label, alg_id, params, output_key='OUTPUT'):
+ACTION_WIDTH = 32
+
+def run_step(prefix, label, alg_id, params, output_key='OUTPUT'):
     feedback = QgsProcessingFeedback()
 
-    print(label)
+    label = f"{label:>{ACTION_WIDTH}}."
+    print(f"{prefix} {label}")
     out_path = None
     if isinstance(params, dict):
         # Prefer explicit output_key, then common 'OUTPUT'
@@ -93,7 +95,7 @@ def run_step(label, alg_id, params, output_key='OUTPUT'):
     dt = time.perf_counter() - t0
     out = res.get(output_key)
     out_size = size_mib(out) if isinstance(out, str) else 0.0
-    print(f"{label}. Done in {dt:.2f}s, size: {out_size:.2f} MiB")
+    print(f"{prefix} {label} Done in {dt:.2f}s, size: {out_size:.2f} MiB")
     return res
 
 
@@ -122,14 +124,14 @@ def process_dem(dem_path, osm_path_out):
 
     dem_out = QgsRasterLayer(dem_path, "DEM")
 
-
     # 1) Slope
     res2 = run_step(
-        f"{prefix} Compute Slope from {dem_out.source()}",
+        prefix,
+        f"Compute Slope",
         "qgis:slope",
         {
             'INPUT': dem_out,
-            'Z_FACTOR': z_factor,
+            'Z_FACTOR': 1.0,
             'OUTPUT': slope_path
         }
     )
@@ -138,7 +140,8 @@ def process_dem(dem_path, osm_path_out):
     # 2) Reclassify slope > threshold
     expr = f'"{slope_out}@1" > {slope_threshold}'
     res3 = run_step(
-        f"{prefix} Reclassify slope > {slope_threshold}",
+        prefix,
+        f"Reclassify slope > {slope_threshold}",
         "qgis:rastercalculator",
         {
             'EXPRESSION': expr,
@@ -152,7 +155,8 @@ def process_dem(dem_path, osm_path_out):
 
     # 3) Sieve
     res_clean = run_step(
-        f"{prefix} Sieve binary raster > {min_pixels} pixels",
+        prefix,
+        f"Sieve binary raster > {min_pixels} pixels",
         "gdal:sieve",
         {
             'INPUT': binary_out,
@@ -166,7 +170,8 @@ def process_dem(dem_path, osm_path_out):
 
     # 4) Polygonize
     res4 = run_step(
-        f"{prefix} Polygonize binary raster",
+        prefix,
+        "Polygonize binary raster",
         "gdal:polygonize",
         {
             'INPUT': binary_clean,
@@ -180,7 +185,8 @@ def process_dem(dem_path, osm_path_out):
 
     # 5) Extract steep areas (value == 1)
     res = run_step(
-        f"{prefix} Extract steep areas",
+        prefix,
+        "Extract steep areas",
         "native:extractbyattribute",
         {
             "INPUT": poly_out,
@@ -192,7 +198,8 @@ def process_dem(dem_path, osm_path_out):
     )
 
     res_simpl = run_step(
-        f"{prefix} Simplify steep areas",
+        prefix,
+        "Simplify steep areas",
         "native:simplifygeometries",
         {
             "INPUT": res["OUTPUT"],             # or poly_out
@@ -211,8 +218,13 @@ def process_dem(dem_path, osm_path_out):
     # Run ogr2osm using the CURRENT python interpreter
     cmd = [sys.executable, "-m", "ogr2osm", "-f", "-o", osm_path_out, simplified]
 
-    print(f"{prefix} ogr2osm -> {osm_path_out}")
+    label = f"ogr2osm"
+    print(f"{prefix} {label:>{ACTION_WIDTH}}")
+    t0 = time.perf_counter()
     result = subprocess.run(cmd, capture_output=True, text=True)
+    dt = time.perf_counter() - t0
+    out_size = size_mib(osm_path_out)
+    print(f"{prefix} {label:>{ACTION_WIDTH}}. Done in {dt:.2f}s, size: {out_size:.2f} MiB")
 
     if result.returncode != 0:
         print(f"ogr2osm failed:\n{result.stderr}", file=sys.stderr)

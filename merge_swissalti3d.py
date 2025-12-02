@@ -1,4 +1,4 @@
-#!/usr/bin/env /Applications/QGIS.app/Contents/MacOS/bin/python3
+#!/Applications/QGIS.app/Contents/MacOS/bin/python3
 
 import argparse
 import os
@@ -44,9 +44,9 @@ def to_chunks(tiles: Dict[Tuple[int, int], str], width: int, height: int) -> Dic
     result: Dict[Tuple[int, int], List[str]] = {}
     for (x, y), file in tiles.items():
         rxi = ((x - x_min) // x_span) // (len(x_vals) // width)
-        rx = x_min + (rxi * width * x_span)
+        rx = x_min + (rxi * x_span * len(x_vals) // width)
         ryi = ((y - y_min) // y_span) // (len(y_vals) // height)
-        ry = y_min + (ryi * height * y_span)
+        ry = y_min + (ryi * y_span * len(y_vals) // height)
         result[(rx, ry)] = result.get((rx, ry), []) + [file]
 
     unique_files = set(f for files in result.values() for f in files)
@@ -100,8 +100,18 @@ def process_chunk(i, item, prefix, output_dir):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Merge swissalti3d tiles into a 4x4 grid (16 mosaics).")
-    parser.add_argument("input_dir", help="Directory containing swissalti3d *.tif tiles")
-    parser.add_argument("output_dir", help="Directory to write merged mosaics")
+    parser.add_argument(
+        "input_dir",
+        nargs="?",
+        default="swiss-alti3d-raw",
+        help="Directory containing swissalti3d *.tif tiles (default: swiss-alti3d-raw)"
+    )
+    parser.add_argument(
+        "output_dir",
+        nargs="?",
+        default="swiss-alti3d",
+        help="Directory to write merged mosaics (default: swiss-alti3d)"
+    )
     parser.add_argument("--width", type=int, default=8, help="Grid width (default: 8)")
     parser.add_argument("--height", type=int, default=4, help="Grid height (default: 4)")
     parser.add_argument("--prefix", default="swissalti3d_mosaic", help="Output filename prefix")

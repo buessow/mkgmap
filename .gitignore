@@ -10,3 +10,5 @@ work
 in
 swiss-alti3d
 swiss-alti3d-raw
+db_config.py
+__pycache__/db_config.cpython-311.pyc
