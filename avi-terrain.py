@@ -4,6 +4,7 @@ import argparse
 import os
 import sys
 import time
+import subprocess
 
 # Set QGIS environment before importing qgis modules
 QGIS_CONTENTS = "/Applications/QGIS.app/Contents"
@@ -36,8 +37,6 @@ from qgis.analysis import QgsNativeAlgorithms
 
 # Global reference to hold the QGIS app
 qgs = None
-
-
 
 
 def init_qgis():
@@ -79,8 +78,7 @@ ACTION_WIDTH = 32
 def run_step(prefix, label, alg_id, params, output_key='OUTPUT'):
     feedback = QgsProcessingFeedback()
 
-    label = f"{label:>{ACTION_WIDTH}}."
-    print(f"{prefix} {label}")
+    l = f"{label:>{ACTION_WIDTH}}."
     out_path = None
     if isinstance(params, dict):
         # Prefer explicit output_key, then common 'OUTPUT'
@@ -88,29 +86,23 @@ def run_step(prefix, label, alg_id, params, output_key='OUTPUT'):
         if isinstance(candidate, str):
             out_path = candidate
     if out_path and os.path.exists(out_path):
-        print(f"  skip (cache hit), size: {size_mib(out_path):.2f} MiB")
+        print(f"{prefix} {l} Skip, size: {size_mib(out_path):.2f} MiB")
         return {output_key: out_path}
+    print(f"{prefix} {l}")
     t0 = time.perf_counter()
     res = processing.run(alg_id, params, feedback=feedback)
     dt = time.perf_counter() - t0
     out = res.get(output_key)
     out_size = size_mib(out) if isinstance(out, str) else 0.0
-    print(f"{prefix} {label} Done in {dt:.2f}s, size: {out_size:.2f} MiB")
+    print(f"{prefix} {l} Done in {dt:.2f}s, size: {out_size:.2f} MiB")
     return res
 
 
-parser = argparse.ArgumentParser(description="Process a single DEM raster file for steep slope analysis.")
-parser.add_argument("input_dem", help="Input DEM raster file path")
-parser.add_argument("output_osm", help="Output OSM file path")
-args = parser.parse_args()
-
-def process_dem(dem_path, osm_path_out):
+def alti3d_to_slope30(prefix, dem_path, osm_path_out):
     # Derive intermediate paths based on input filename, placed in output directory
     output_dir = os.path.dirname(osm_path_out) or "."
     input_basename = os.path.splitext(os.path.basename(dem_path))[0]
     base_out = os.path.join(output_dir, input_basename)
-
-    prefix = input_basename
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
@@ -210,15 +202,66 @@ def process_dem(dem_path, osm_path_out):
     )
 
     simplified = res_simpl["OUTPUT"]
+    return simplified
 
-    # Convert to OSM using the same python binary
-    import subprocess
-    import shutil
+def rock_to_vector(prefix, rock_tif_path, output_base_path):
+    output_dir = os.path.dirname(output_base_path) or "."
+    os.makedirs(output_dir, exist_ok=True)
 
+    rock_layer = QgsRasterLayer(rock_tif_path, "Rock")
+    if not rock_layer.isValid():
+        print(f"Error: Failed to load rock raster layer from {rock_tif_path}")
+        return None
+
+    intermediate_path = f"{output_base_path}_all.gpkg"
+    extracted_path = f"{output_base_path}_xtrct.gpkg"
+    simplified_path = f"{output_base_path}_smpl.gpkg"
+    run_step(
+        prefix,
+        "Polygonize rock raster",
+        "gdal:polygonize",
+        {
+            "INPUT": rock_layer,
+            "BAND": 1,
+            "FIELD": "rock",
+            'EIGHT_CONNECTEDNESS': True,
+            'OUTPUT': intermediate_path
+        }
+    )
+    run_step(
+        prefix,
+        "Extract rock areas",
+        "native:extractbyattribute",
+        {
+            "INPUT": intermediate_path,
+            "FIELD": "rock",
+            "OPERATOR": 0,            # 0 = "="
+            "VALUE": 0,
+            "OUTPUT": extracted_path
+        }
+    )
+    run_step(
+        prefix,
+        "Simplify rock areas",
+        "native:simplifygeometries",
+        {
+            "INPUT": extracted_path,
+            "METHOD": 0,                        # 0 = distance (Douglas–Peucker)
+            "TOLERANCE": 3.0,                   # meters; increase to simplify more
+            "OUTPUT": simplified_path
+        }
+    )
+    return simplified_path
+
+def convert_to_osm(prefix, input_path, osm_path_out):
     # Run ogr2osm using the CURRENT python interpreter
-    cmd = [sys.executable, "-m", "ogr2osm", "-f", "-o", osm_path_out, simplified]
+    cmd = [sys.executable, "-m", "ogr2osm", "-f", "-o", osm_path_out, input_path]
+    label = f"Convert to OSM"
 
-    label = f"ogr2osm"
+    if os.path.exists(osm_path_out):
+        print(f"{prefix} {label:>{ACTION_WIDTH}}. Skip, size: {size_mib(osm_path_out):.2f} MiB")
+        return
+
     print(f"{prefix} {label:>{ACTION_WIDTH}}")
     t0 = time.perf_counter()
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -229,13 +272,26 @@ def process_dem(dem_path, osm_path_out):
     if result.returncode != 0:
         print(f"ogr2osm failed:\n{result.stderr}", file=sys.stderr)
 
+
+parser = argparse.ArgumentParser(description="Process a single DEM raster file for steep slope analysis.")
+parser.add_argument("mode", help="Mode (slope30|rock)")
+parser.add_argument("input_dem", help="Input DEM raster file path")
+parser.add_argument("output_osm", help="Output OSM file path")
+args = parser.parse_args()
+
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python avi-terrain.py <input_dem> <output_osm>")
+        print("Usage: python avi-terrain.py (slope30|rock) <input_dem> <output_osm>")
         sys.exit(1)
 
-    process_dem(args.input_dem, args.output_osm)
-
-    # Cleanup
-    if qgs:
-        qgs.exitQgis()
+    output_base_path = os.path.splitext(args.output_osm)[0]
+    prefix = os.path.splitext(os.path.basename(args.output_osm))[0]
+    if args.mode == "slope30":
+        vector_layer = alti3d_to_slope30(prefix, args.input_dem, output_base_path)
+        convert_to_osm(prefix, vector_layer, args.output_osm)
+    elif args.mode == "rock":
+        vector_layer = rock_to_vector(prefix, args.input_dem, output_base_path)
+        convert_to_osm(prefix, vector_layer, args.output_osm)
+    else:
+        print(f"Unknown mode: {args.mode}")
+        sys.exit(1)

@@ -152,6 +152,7 @@ setup:
 
 SWISSALTI3D_RAW_DIR = swiss-alti3d-raw
 SWISSALTI3D_MERGED_DIR = swiss-alti3d
+SWISS_VECTOR25_RAW_DIR = swiss-vector25-raw
 
 $(SWISSALTI3D_RAW_DIR):
 	mkdir -p $@
@@ -159,6 +160,11 @@ $(SWISSALTI3D_RAW_DIR):
 download-swissalti3d: swiss-alti3d-2m_urls.txt | $(SWISSALTI3D_RAW_DIR)
 	@total=$$(wc -l < $< | tr -d ' '); \
 	cat -n $< | xargs -n 2 -P 50 sh -c 'file="$(SWISSALTI3D_RAW_DIR)/$$(basename $$2)"; if [ ! -e "$$file" ]; then echo "Downloading [$$1/'"$$total"'] $$(basename $$2)"; wget -q --directory-prefix=$(SWISSALTI3D_RAW_DIR) --no-clobber $$2; fi' sh
+
+download-swiss-vector25: swiss-vector25_urls.txt | $(SWISS_VECTOR25_RAW_DIR)
+	@total=$$(wc -l < $< | tr -d ' '); \
+	cat -n $< | xargs -n 2 -P 50 sh -c 'file="$(SWISS_VECTOR25_RAW_DIR)/$$(basename $$2)"; if [ ! -e "$$file" ]; then echo "Downloading [$$1/'"$$total"'] $$(basename $$2)"; wget -q --directory-prefix=$(SWISS_VECTOR25_RAW_DIR) --no-clobber $$2; fi' sh
+
 
 $(WORK_DIR)/swissalti3d_all.tif:
 	$(GDALWARP) -t_srs EPSG:2056 -multi -r bilinear -overwrite /Volumes/T9/qgis-data/alt2/*.tif $@
@@ -168,25 +174,24 @@ $(IN_DIR)/skitouren_2056.gpkg.zip:
 
 
 SWISS_SLOPE30_OSMS = $(patsubst %.tif,%.osm,$(wildcard $(SWISSALTI3D_MERGED_DIR)/*_alti3d.tif))
-%.osm: %.tif
-	$(PYTHON3) avi-terrain.py $< $@
-
+%_alti3d.osm: %_alti3d.tif
+	$(PYTHON3) avi-terrain.py slope30 $< $@
+print_slope30_osms:
+	@echo $(SWISS_SLOPE30_OSMS)
 slope30_osms: $(SWISS_SLOPE30_OSMS)
 
-print_slope30_osms:
-	echo $(SWISS_SLOPE30_OSMS)
+SWISS_ROCK_OSMS = $(patsubst swiss-vector25-raw/%/SMV25_CHLV95LN02_RASTER/FELS.tif,work/swiss-rock/rock_%.osm,$(wildcard $(SWISS_VECTOR25_RAW_DIR)/*/SMV25_CHLV95LN02_RASTER/FELS.tif))
 
-$(WORK_DIR)/swiss-skitouring/swiss-slope30.args: $(SWISS_SLOPE30_OSMS)
-	rm -f $@
-	@id=30003000; \
-	list='$^'; \
-	if [ -n "$$list" ]; then \
-		for file in $$list; do \
-			echo "mapname: $$id" >> $@; \
-			echo "input-file: $(ROOT_DIR)/$$file" >> $@; \
-			id=$$((id+1)); \
-		done; \
-	fi
+work/swiss-rock/rock_%.tif: swiss-vector25-raw/%/SMV25_CHLV95LN02_RASTER/FELS.tif
+	cp $< $@
+
+rock_%.osm: rock_%.tif
+	$(PYTHON3) avi-terrain.py rock $< $@
+
+print_rock_osms:
+	@echo $(SWISS_ROCK_OSMS)
+
+rock_osms: $(SWISS_ROCK_OSMS)
 
 
 $(WORK_DIR)/swiss-skitouring/ski_network_2056.gpkg: $(IN_DIR)/skitouren_2056.gpkg.zip
@@ -223,6 +228,18 @@ $(OUT_DIR)/swiss-ski-network.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056_
 	bash -c "$$cmd"; \
 	mv $(WORK_DIR)/swiss-skitouring/gmapsupp.img $(OUT_DIR)/swiss-ski-network.img
 
+$(WORK_DIR)/swiss-skitouring/swiss-slope30.args: $(SWISS_SLOPE30_OSMS)
+	rm -f $@
+	@id=30003000; \
+	list='$^'; \
+	if [ -n "$$list" ]; then \
+		for file in $$list; do \
+			echo "mapname: $$id" >> $@; \
+			echo "input-file: $(ROOT_DIR)/$$file" >> $@; \
+			id=$$((id+1)); \
+		done; \
+	fi
+
 $(OUT_DIR)/swiss-slope30.img: $(WORK_DIR)/swiss-skitouring/swiss-slope30.args topo/topo.cfg topo/topo-typ.txt $(wildcard topo/style/*)
 	@mkdir -p $(OUT_DIR)
 	@mkdir -p $(WORK_DIR)/swiss-skitouring
@@ -245,7 +262,43 @@ $(OUT_DIR)/swiss-slope30.img: $(WORK_DIR)/swiss-skitouring/swiss-slope30.args to
 	bash -c "$$cmd"; \
 	mv $(WORK_DIR)/swiss-skitouring/gmapsupp.img $@
 
-skitouring: $(OUT_DIR)/swiss-ski-network.img $(OUT_DIR)/swiss-slope30.img
+$(WORK_DIR)/swiss-rock/swiss-rock.args: $(SWISS_ROCK_OSMS)
+	rm -f $@
+	@id=30004000; \
+	echo "LL $^"; \
+	list='$^'; \
+	if [ -n "$$list" ]; then \
+		for file in $$list; do \
+			echo "mapname: $$id" >> $@; \
+			echo "input-file: $(ROOT_DIR)/$$file" >> $@; \
+			id=$$((id+2)); \
+		done; \
+	fi
+
+$(OUT_DIR)/swiss-rock.img: $(WORK_DIR)/swiss-rock/swiss-rock.args topo/topo.cfg topo/topo-typ.txt $(wildcard topo/style/*)
+	@mkdir -p $(OUT_DIR)
+	@mkdir -p $(WORK_DIR)/swiss-rock
+	@cmd="cd $(WORK_DIR)/swiss-rock; \
+		java -Xms5g -Xmx16g -XX:+UseParallelGC -Dlog.config=$(ROOT_DIR)/logging.properties \
+		    -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
+			--style-file=$(ROOT_DIR)/topo/style \
+			--read-config=$(ROOT_DIR)/topo/topo.cfg \
+			--family-id=30004 \
+			--series-name=RB_S_OUTABOUT_SKI_ROCK \
+			--area-name=RB_A_OUTABOUT_SKI_ROCK \
+			--description=Outabout\ Swiss\ Rock \
+			--overview-mapname=RB_OUTABOUT_SKI_ROCK \
+			--overview-mapnumber=30001004 \
+			--read-config=$(ROOT_DIR)/$(WORK_DIR)/swiss-rock/swiss-rock.args \
+			$(ROOT_DIR)/topo/topo-typ.txt \
+			"; \
+	cmd=$$(echo $$cmd | sed 's/  */ /g'); \
+	echo "($$cmd)"; \
+	bash -c "$$cmd"; \
+	mv $(WORK_DIR)/swiss-rock/gmapsupp.img $@
+
+
+skitouring: $(OUT_DIR)/swiss-ski-network.img $(OUT_DIR)/swiss-slope30.img $(OUT_DIR)/swiss-rock.img
 
 all: $(foreach country,$(COUNTRIES),$(OUT_DIR)/osm-oa-$(country).img)
 

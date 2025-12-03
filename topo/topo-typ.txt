@@ -9,6 +9,7 @@ CodePage=1252
 
 [_drawOrder]
 Type=0x060,1
+type=0x061,2
 [end]
 
 [_polygon]
@@ -53,6 +54,14 @@ Xpm="32 32 2 1"
 "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! "
 "                                "
 ;12345678901234567890123456789012
+[end]
+
+[_polygon]
+type=0x61
+String=Rock
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #404040"
 [end]
 
 
