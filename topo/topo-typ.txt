@@ -70,7 +70,8 @@ Type=0x010001
 String=Skiroute
 ExtendedLabels=Y
 FontStyle=SmallFont
-CustomColor=No
+CustomColor=Day
+DayCustomColor:#FF5500
 LineWidth=0
 BorderWidth=0
 UseOrientation=Y
