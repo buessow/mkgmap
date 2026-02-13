@@ -1,4 +1,4 @@
-#!/Applications/QGIS.app/Contents/MacOS/bin/python3
+#!/Volumes/T9/Applications/QGIS.app/Contents/MacOS/bin/python3
 
 import argparse
 import os

@@ -5,10 +5,11 @@ STYLE_DIR = my-style
 STYLE_FILES = $(wildcard $(STYLE_DIR)/*)
 TYP_FILES = typ-files/20011.txt typ-files/sameOrder.txt
 ROOT_DIR := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+OGR2OSM = /opt/homebrew/Caskroom/miniforge/base/envs/ogr2osm/bin/ogr2osm
 
-QGIS_DIR = /Applications/QGIS.app/Contents/MacOS
-PYTHON3 = $(QGIS_DIR)/bin/python3
-GDALWARP = $(QGIS_DIR)/bin/gdalwarp
+PYTHON3 = $(QGIS_DIR)/MacOS/python
+GDALWARP = $(QGIS_DIR)/MacOS/gdalwarp
+GDALBUILDVRT = $(QGIS_DIR)/MacOS/gdalbuildvrt
 
 OSMOSIS_VERSION = 0.49.2
 OSMOSIS = osmosis-$(OSMOSIS_VERSION)
@@ -150,9 +151,9 @@ setup:
 	python -c "from osgeo import gdal; print(gdal.__version__)"
 	ogr2osm -h
 
-SWISSALTI3D_RAW_DIR = swiss-alti3d-raw
-SWISSALTI3D_MERGED_DIR = swiss-alti3d
-SWISS_VECTOR25_RAW_DIR = swiss-vector25-raw
+SWISSALTI3D_RAW_DIR = in/swiss-alti3d-raw
+SWISSALTI3D_MERGED_DIR = work/swiss-alti3d
+SWISS_VECTOR25_RAW_DIR = in/swiss-vector25-raw
 
 $(SWISSALTI3D_RAW_DIR):
 	mkdir -p $@
@@ -166,8 +167,13 @@ download-swiss-vector25: swiss-vector25_urls.txt | $(SWISS_VECTOR25_RAW_DIR)
 	cat -n $< | xargs -n 2 -P 50 sh -c 'file="$(SWISS_VECTOR25_RAW_DIR)/$$(basename $$2)"; if [ ! -e "$$file" ]; then echo "Downloading [$$1/'"$$total"'] $$(basename $$2)"; wget -q --directory-prefix=$(SWISS_VECTOR25_RAW_DIR) --no-clobber $$2; fi' sh
 
 
-$(WORK_DIR)/swissalti3d_all.tif:
-	$(GDALWARP) -t_srs EPSG:2056 -multi -r bilinear -overwrite /Volumes/T9/qgis-data/alt2/*.tif $@
+#$(WORK_DIR)/swissalti3d_all.vrt:
+##	@mkdir -p $(dir $@)
+#	@find $(SWISSALTI3D_RAW_DIR) -name '*.tif' -print > $@.list
+#	$(GDALBUILDVRT) -input_file_list $@.list $@
+
+#$(WORK_DIR)/swissalti3d_all.tif: $(WORK_DIR)/swissalti3d_all.vrt
+#	$(GDALWARP) -t_srs EPSG:2056 -multi -r bilinear -overwrite $< $@
 
 $(IN_DIR)/skitouren_2056.gpkg.zip:
 	wget --directory-prefix=$(IN_DIR) https://data.geo.admin.ch/ch.swisstopo-karto.skitouren/skitouren/skitouren_2056.gpkg.zip
@@ -183,6 +189,7 @@ slope30_osms: $(SWISS_SLOPE30_OSMS)
 SWISS_ROCK_OSMS = $(patsubst swiss-vector25-raw/%/SMV25_CHLV95LN02_RASTER/FELS.tif,work/swiss-rock/rock_%.osm,$(wildcard $(SWISS_VECTOR25_RAW_DIR)/*/SMV25_CHLV95LN02_RASTER/FELS.tif))
 
 work/swiss-rock/rock_%.tif: swiss-vector25-raw/%/SMV25_CHLV95LN02_RASTER/FELS.tif
+	@mkdir -p $(dirname $@)
 	cp $< $@
 
 rock_%.osm: rock_%.tif
@@ -204,14 +211,14 @@ $(WORK_DIR)/swiss-skitouring/ski_network_2056.osm: $(WORK_DIR)/swiss-skitouring/
 $(WORK_DIR)/swiss-skitouring/ski_network_2056_updated.osm: $(WORK_DIR)/swiss-skitouring/ski_network_2056.osm find_nearby_peaks.py db_config.py
 	$(PYTHON3) find_nearby_peaks.py --osm-file $< --output-osm-file $@
 
-$(OUT_DIR)/swiss-ski-network.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056_updated.osm topo/topo.cfg topo/topo-typ.txt $(wildcard topo/style/*)
+$(OUT_DIR)/swiss-ski-network.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056_updated.osm topo-ski/topo.cfg topo-ski/topo-typ.txt $(wildcard topo-ski/style/*)
 	@mkdir -p $(OUT_DIR)
 	@mkdir -p $(WORK_DIR)/swiss-skitouring
 	@cmd="cd $(WORK_DIR)/swiss-skitouring; \
 		java -Xms5g -Xmx16g -XX:+UseParallelGC -Dlog.config=$(ROOT_DIR)/logging.properties \
 		    -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
-			--style-file=$(ROOT_DIR)/topo/style \
-			--read-config=$(ROOT_DIR)/topo/topo.cfg \
+			--style-file=$(ROOT_DIR)/topo-ski/style \
+			--read-config=$(ROOT_DIR)/topo-ski/topo.cfg \
 			--draw-priority=10 \
 			--mapname=30001001 \
 			--family-id=30001 \
@@ -221,7 +228,7 @@ $(OUT_DIR)/swiss-ski-network.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056_
 			--overview-mapname=RB_OUTABOUT_SKI_NETWORK \
 			--overview-mapnumber=30001001 \
 			ski_network_2056_updated.osm \
-			$(ROOT_DIR)/topo/topo-typ.txt \
+			$(ROOT_DIR)/topo-ski/topo-typ.txt \
 			"; \
 	cmd=$$(echo $$cmd | sed 's/  */ /g'); \
 	echo "($$cmd)"; \
@@ -240,14 +247,14 @@ $(WORK_DIR)/swiss-skitouring/swiss-slope30.args: $(SWISS_SLOPE30_OSMS)
 		done; \
 	fi
 
-$(OUT_DIR)/swiss-slope30.img: $(WORK_DIR)/swiss-skitouring/swiss-slope30.args topo/topo.cfg topo/topo-typ.txt $(wildcard topo/style/*)
+$(OUT_DIR)/swiss-slope30.img: $(WORK_DIR)/swiss-skitouring/swiss-slope30.args topo-ski/topo.cfg topo-ski/topo-typ.txt $(wildcard topo-ski/style/*)
 	@mkdir -p $(OUT_DIR)
 	@mkdir -p $(WORK_DIR)/swiss-skitouring
 	@cmd="cd $(WORK_DIR)/swiss-skitouring; \
 		java -Xms5g -Xmx16g -XX:+UseParallelGC -Dlog.config=$(ROOT_DIR)/logging.properties \
 		    -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
-			--style-file=$(ROOT_DIR)/topo/style \
-			--read-config=$(ROOT_DIR)/topo/topo.cfg \
+			--style-file=$(ROOT_DIR)/topo-ski/style \
+			--read-config=$(ROOT_DIR)/topo-ski/topo.cfg \
 			--family-id=30003 \
 			--series-name=RB_S_OUTABOUT_SKI_SLOPE30 \
 			--area-name=RB_A_OUTABOUT_SKI_SLOPE30 \
@@ -255,7 +262,7 @@ $(OUT_DIR)/swiss-slope30.img: $(WORK_DIR)/swiss-skitouring/swiss-slope30.args to
 			--overview-mapname=RB_OUTABOUT_SKI_SLOPE30 \
 			--overview-mapnumber=30001003 \
 			--read-config=$(ROOT_DIR)/$(WORK_DIR)/swiss-skitouring/swiss-slope30.args \
-			$(ROOT_DIR)/topo/topo-typ.txt \
+			$(ROOT_DIR)/topo-ski/topo-typ.txt \
 			"; \
 	cmd=$$(echo $$cmd | sed 's/  */ /g'); \
 	echo "($$cmd)"; \
@@ -275,14 +282,14 @@ $(WORK_DIR)/swiss-rock/swiss-rock.args: $(SWISS_ROCK_OSMS)
 		done; \
 	fi
 
-$(OUT_DIR)/swiss-rock.img: $(WORK_DIR)/swiss-rock/swiss-rock.args topo/topo.cfg topo/topo-typ.txt $(wildcard topo/style/*)
+$(OUT_DIR)/swiss-rock.img: $(WORK_DIR)/swiss-rock/swiss-rock.args topo-ski/topo.cfg topo-ski/topo-typ.txt $(wildcard topo-ski/style/*)
 	@mkdir -p $(OUT_DIR)
 	@mkdir -p $(WORK_DIR)/swiss-rock
 	@cmd="cd $(WORK_DIR)/swiss-rock; \
 		java -Xms5g -Xmx16g -XX:+UseParallelGC -Dlog.config=$(ROOT_DIR)/logging.properties \
 		    -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
-			--style-file=$(ROOT_DIR)/topo/style \
-			--read-config=$(ROOT_DIR)/topo/topo.cfg \
+			--style-file=$(ROOT_DIR)/topo-ski/style \
+			--read-config=$(ROOT_DIR)/topo-ski/topo.cfg \
 			--family-id=30004 \
 			--series-name=RB_S_OUTABOUT_SKI_ROCK \
 			--area-name=RB_A_OUTABOUT_SKI_ROCK \
@@ -290,7 +297,7 @@ $(OUT_DIR)/swiss-rock.img: $(WORK_DIR)/swiss-rock/swiss-rock.args topo/topo.cfg 
 			--overview-mapname=RB_OUTABOUT_SKI_ROCK \
 			--overview-mapnumber=30001004 \
 			--read-config=$(ROOT_DIR)/$(WORK_DIR)/swiss-rock/swiss-rock.args \
-			$(ROOT_DIR)/topo/topo-typ.txt \
+			$(ROOT_DIR)/topo-ski/topo-typ.txt \
 			"; \
 	cmd=$$(echo $$cmd | sed 's/  */ /g'); \
 	echo "($$cmd)"; \
