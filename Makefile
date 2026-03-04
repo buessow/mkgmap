@@ -7,6 +7,7 @@ TYP_FILES = typ-files/20011.txt typ-files/sameOrder.txt
 ROOT_DIR := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 OGR2OSM = /opt/homebrew/Caskroom/miniforge/base/envs/ogr2osm/bin/ogr2osm
 
+QGIS_DIR = /Volumes/T9/Applications/QGIS.app/Contents
 PYTHON3 = $(QGIS_DIR)/MacOS/python
 GDALWARP = $(QGIS_DIR)/MacOS/gdalwarp
 GDALBUILDVRT = $(QGIS_DIR)/MacOS/gdalbuildvrt
@@ -153,7 +154,11 @@ setup:
 
 SWISSALTI3D_RAW_DIR = in/swiss-alti3d-raw
 SWISSALTI3D_MERGED_DIR = work/swiss-alti3d
+SWISSALTI3D_MERGED_RULES_MK = $(WORK_DIR)/swissalti3d_merged_rules.mk
+-include $(SWISSALTI3D_MERGED_RULES_MK)
+
 SWISS_VECTOR25_RAW_DIR = in/swiss-vector25-raw
+SWISS_VECTOR25_1_DIR = work/swiss-vector25
 
 $(SWISSALTI3D_RAW_DIR):
 	mkdir -p $@
@@ -166,6 +171,18 @@ download-swiss-vector25: swiss-vector25_urls.txt | $(SWISS_VECTOR25_RAW_DIR)
 	@total=$$(wc -l < $< | tr -d ' '); \
 	cat -n $< | xargs -n 2 -P 50 sh -c 'file="$(SWISS_VECTOR25_RAW_DIR)/$$(basename $$2)"; if [ ! -e "$$file" ]; then echo "Downloading [$$1/'"$$total"'] $$(basename $$2)"; wget -q --directory-prefix=$(SWISS_VECTOR25_RAW_DIR) --no-clobber $$2; fi' sh
 
+SWISS_VECTOR24_GPKGPS=$(patsubst $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_2024_%_2056.gpkg.zip,$(SWISS_VECTOR25_1_DIR)/%/SMV25_CHLV95LN02.gpkg,$(wildcard $(SWISS_VECTOR25_RAW_DIR)/*.zip))
+$(SWISS_VECTOR25_1_DIR)/%/SMV25_CHLV95LN02.gpkg: $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_2024_%_2056.gpkg.zip
+	@mkdir -p $(SWISS_VECTOR25_1_DIR)
+	unzip -u -LL $< -d $(SWISS_VECTOR25_1_DIR) || [ $$? -eq 1 ] # unzip returns 1 on warnings (due to filesep)
+
+swiss-vector25-gpkps: $(SWISS_VECTOR24_GPKGPS)
+
+$(SWISSALTI3D_MERGED_RULES_MK): merge_swissalti3d.py download-swissalti3d
+	@mkdir -p $(dir $@)
+	@$(PYTHON3) merge_swissalti3d.py $(SWISSALTI3D_RAW_DIR) $(SWISSALTI3D_MERGED_DIR) --print-make-rules > $@
+
+swissalti3d-merged: $(SWISSALTI3D_MERGED_FILES)
 
 #$(WORK_DIR)/swissalti3d_all.vrt:
 ##	@mkdir -p $(dir $@)
@@ -179,9 +196,9 @@ $(IN_DIR)/skitouren_2056.gpkg.zip:
 	wget --directory-prefix=$(IN_DIR) https://data.geo.admin.ch/ch.swisstopo-karto.skitouren/skitouren/skitouren_2056.gpkg.zip
 
 
-SWISS_SLOPE30_OSMS = $(patsubst %.tif,%.osm,$(wildcard $(SWISSALTI3D_MERGED_DIR)/*_alti3d.tif))
+SWISS_SLOPE30_OSMS = $(patsubst %.tif,%.osm,$(SWISSALTI3D_MERGED_FILES))
 %_alti3d.osm: %_alti3d.tif
-	$(PYTHON3) avi-terrain.py slope30 $< $@
+	OGR2OSM=$(OGR2OSM) $(PYTHON3) avi-terrain.py slope30 $< $@
 print_slope30_osms:
 	@echo $(SWISS_SLOPE30_OSMS)
 slope30_osms: $(SWISS_SLOPE30_OSMS)
@@ -193,7 +210,7 @@ work/swiss-rock/rock_%.tif: swiss-vector25-raw/%/SMV25_CHLV95LN02_RASTER/FELS.ti
 	cp $< $@
 
 rock_%.osm: rock_%.tif
-	$(PYTHON3) avi-terrain.py rock $< $@
+	OGR2OSM=$(OGR2OSM) $(PYTHON3) avi-terrain.py rock $< $@
 
 print_rock_osms:
 	@echo $(SWISS_ROCK_OSMS)
@@ -206,7 +223,7 @@ $(WORK_DIR)/swiss-skitouring/ski_network_2056.gpkg: $(IN_DIR)/skitouren_2056.gpk
 	unzip -u $(IN_DIR)/skitouren_2056.gpkg.zip -d $(WORK_DIR)/swiss-skitouring
 
 $(WORK_DIR)/swiss-skitouring/ski_network_2056.osm: $(WORK_DIR)/swiss-skitouring/ski_network_2056.gpkg
-	ogr2osm --id=-2000000000 --positive-id -f -o $@ $<
+	$(OGR2OSM) --id=-2000000000 --positive-id -f -o $@ $<
 
 $(WORK_DIR)/swiss-skitouring/ski_network_2056_updated.osm: $(WORK_DIR)/swiss-skitouring/ski_network_2056.osm find_nearby_peaks.py db_config.py
 	$(PYTHON3) find_nearby_peaks.py --osm-file $< --output-osm-file $@

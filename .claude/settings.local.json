@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/Volumes/T9/Applications/QGIS.app/Contents/MacOS/python:*)",
+      "Bash(make:*)",
+      "Bash($QGIS_DIR/MacOS/python -c \"from osgeo import gdal; print\\(gdal.__version__\\)\")",
+      "Bash(/opt/homebrew/Caskroom/miniforge/base/envs/ogr2osm/bin/python:*)",
+      "Bash(afplay:*)",
+      "Bash(diskutil apfs:*)",
+      "Bash(sudo diskutil:*)",
+      "Bash(lsof:*)",
+      "Bash(sample:*)",
+      "Bash(/opt/homebrew/Caskroom/miniforge/base/envs/ogr2osm/bin/ogrinfo:*)",
+      "Bash(OGR2OSM=/opt/homebrew/Caskroom/miniforge/base/envs/ogr2osm/bin/ogr2osm /Volumes/T9/Applications/QGIS.app/Contents/MacOS/python:*)"
+    ]
+  }
+}
