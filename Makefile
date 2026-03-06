@@ -172,7 +172,7 @@ download-swiss-vector25: swiss-vector25_urls.txt | $(SWISS_VECTOR25_RAW_DIR)
 	cat -n $< | xargs -n 2 -P 50 sh -c 'file="$(SWISS_VECTOR25_RAW_DIR)/$$(basename $$2)"; if [ ! -e "$$file" ]; then echo "Downloading [$$1/'"$$total"'] $$(basename $$2)"; wget -q --directory-prefix=$(SWISS_VECTOR25_RAW_DIR) --no-clobber $$2; fi' sh
 
 SWISS_VECTOR24_GPKGPS=$(patsubst $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_2024_%_2056.gpkg.zip,$(SWISS_VECTOR25_1_DIR)/%/SMV25_CHLV95LN02.gpkg,$(wildcard $(SWISS_VECTOR25_RAW_DIR)/*.zip))
-$(SWISS_VECTOR25_1_DIR)/%/SMV25_CHLV95LN02.gpkg: $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_2024_%_2056.gpkg.zip
+$(SWISS_VECTOR25_1_DIR)/%/smv25_chlv95ln02.gpkg: $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_2024_%_2056.gpkg.zip
 	@mkdir -p $(SWISS_VECTOR25_1_DIR)
 	unzip -u -LL $< -d $(SWISS_VECTOR25_1_DIR) || [ $$? -eq 1 ] # unzip returns 1 on warnings (due to filesep)
 
@@ -194,13 +194,17 @@ print_slope30_osms:
 	@echo $(SWISS_SLOPE30_OSMS)
 slope30_osms: $(SWISS_SLOPE30_OSMS)
 
-SWISS_ROCK_OSMS = $(patsubst $(SWISS_VECTOR25_1_DIR)/%/SMV25_CHLV95LN02_RASTER/FELS.tif,work/swiss-rock/rock_%.osm,$(wildcard $(SWISS_VECTOR25_1_DIR)/*/SMV25_CHLV95LN02_RASTER/FELS.tif))
+#SWISS_ROCK_OSMS = $(patsubst $(SWISS_VECTOR25_1_DIR)/%/smv25_chlv95ln02_raster/fels.tif,work/swiss-rock/rock_%.osm,$(wildcard $(SWISS_VECTOR25_1_DIR)/*/SMV25_CHLV95LN02_RASTER/FELS.tif))
+SWISS_ROCK_OSMS = $(patsubst $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_2024_%_2056.gpkg.zip,work/swiss-rock/rock_%.osm,$(wildcard $(SWISS_VECTOR25_RAW_DIR)/*.zip))
+$(SWISS_VECTOR25_1_DIR)/%/smv25_chlv95ln02_raster/fels.tif: $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_2024_%_2056.gpkg.zip
+	@mkdir -p $(dir $@)
+	unzip -u -LL $< -d $(SWISS_VECTOR25_1_DIR) || [ $$? -eq 1 ] # unzip returns 1 on warnings (due to filesep)
 
-work/swiss-rock/rock_%.tif: $(SWISS_VECTOR25_1_DIR)/%/SMV25_CHLV95LN02_RASTER/FELS.tif
+work/swiss-rock/rock_%.tif: $(SWISS_VECTOR25_1_DIR)/%/smv25_chlv95ln02_raster/fels.tif
 	@mkdir -p $(dir $@)
 	cp $< $@
 
-rock_%.osm: rock_%.tif
+work/swiss-rock/rock_%.osm: work/swiss-rock/rock_%.tif
 	OGR2OSM=$(OGR2OSM) $(PYTHON3) avi-terrain.py rock $< $@
 
 print_rock_osms:

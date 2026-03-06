@@ -325,7 +325,7 @@ def rock_to_vector(prefix, rock_tif_path, output_base_path):
     output_dir = os.path.dirname(output_base_path) or "."
     os.makedirs(output_dir, exist_ok=True)
 
-    rock_layer = QgsRasterLayer(rock_tif_path, "Rock")
+    rock_layer = QgsRasterLayer(f"{rock_tif_path}|option:SRC_METHOD=NO_GEOTRANSFORM", "Rock")
     if not rock_layer.isValid():
         print(f"Error: Failed to load rock raster layer from {rock_tif_path}")
         return None
@@ -338,7 +338,7 @@ def rock_to_vector(prefix, rock_tif_path, output_base_path):
         "Polygonize rock raster",
         "gdal:polygonize",
         {
-            "INPUT": rock_layer,
+            "INPUT": rock_tif_path,
             "BAND": 1,
             "FIELD": "rock",
             'EIGHT_CONNECTEDNESS': True,
