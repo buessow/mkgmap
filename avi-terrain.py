@@ -74,6 +74,10 @@ QGIS_SCRIPTS = first_existing(
 QGIS_FRAMEWORKS = f"{QGIS_CONTENTS}/Frameworks"
 QGIS_LIB = f"{QGIS_PREFIX}/lib"
 
+# Ensure GDAL scripts are findable by QGIS processing algorithms
+prepend_env_path("PATH", QGIS_SCRIPTS)
+prepend_env_path("PATH", QGIS_PREFIX)  # for gdal binaries
+
 
 def cleanup_pyqt_widget_plugins():
     py_ver = f"python{sys.version_info.major}.{sys.version_info.minor}"
@@ -180,61 +184,18 @@ def run_step(prefix, label, alg_id, params, output_key='OUTPUT'):
         return {output_key: out_path}
     print(f"{prefix} {l}")
     t0 = time.perf_counter()
-    res = processing.run(alg_id, params, feedback=feedback)
+    try:
+        res = processing.run(alg_id, params, feedback=feedback)
+    except Exception:
+        if out_path and os.path.exists(out_path):
+            os.remove(out_path)
+        raise
     dt = time.perf_counter() - t0
     out = res.get(output_key)
     out_size = size_mib(out) if isinstance(out, str) else 0.0
     print(f"{prefix} {l} Done in {dt:.2f}s, size: {out_size:.2f} MiB")
     return res
 
-
-def reclassify_slope_gdal_calc(prefix, slope_path, threshold, output_path):
-    gdal_calc = os.path.join(QGIS_SCRIPTS, "gdal_calc.py")
-    if not os.path.exists(gdal_calc):
-        raise FileNotFoundError(f"gdal_calc.py not found at {gdal_calc}")
-    cmd = [
-        sys.executable,
-        gdal_calc,
-        "-A",
-        slope_path,
-        "--calc",
-        f"A>{threshold}",
-        "--outfile",
-        output_path,
-        "--type",
-        "Byte",
-        "--NoDataValue=0",
-        "--overwrite",
-    ]
-    label = f"Reclassify slope > {threshold} (gdal_calc)"
-    print(f"{prefix} {label:>{ACTION_WIDTH}}")
-    t0 = time.perf_counter()
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    dt = time.perf_counter() - t0
-    if result.returncode != 0:
-        raise RuntimeError(f"gdal_calc failed:\n{result.stderr}")
-    out_size = size_mib(output_path)
-    print(f"{prefix} {label:>{ACTION_WIDTH}}. Done in {dt:.2f}s, size: {out_size:.2f} MiB")
-    return output_path
-
-
-def sieve_gdal_script(prefix, input_path, min_pixels, output_path, eight_connected):
-    gdal_sieve = os.path.join(QGIS_SCRIPTS, "gdal_sieve.py")
-    if not os.path.exists(gdal_sieve):
-        raise FileNotFoundError(f"gdal_sieve.py not found at {gdal_sieve}")
-    cmd = [sys.executable, gdal_sieve, "-st", str(min_pixels), "-of", "GTiff"]
-    cmd.append("-8" if eight_connected else "-4")
-    cmd.extend([input_path, output_path])
-    label = f"Sieve binary raster > {min_pixels} pixels (gdal_sieve)"
-    print(f"{prefix} {label:>{ACTION_WIDTH}}")
-    t0 = time.perf_counter()
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    dt = time.perf_counter() - t0
-    if result.returncode != 0:
-        raise RuntimeError(f"gdal_sieve failed:\n{result.stderr}")
-    out_size = size_mib(output_path)
-    print(f"{prefix} {label:>{ACTION_WIDTH}}. Done in {dt:.2f}s, size: {out_size:.2f} MiB")
-    return output_path
 
 
 def pick_polygon_field(layer, preferred_name):
@@ -246,28 +207,6 @@ def pick_polygon_field(layer, preferred_name):
     if names:
         return names[0]
     return None
-
-
-def polygonize_gdal_script(prefix, input_path, output_path, field_name, eight_connected):
-    gdal_polygonize = os.path.join(QGIS_SCRIPTS, "gdal_polygonize.py")
-    if not os.path.exists(gdal_polygonize):
-        raise FileNotFoundError(f"gdal_polygonize.py not found at {gdal_polygonize}")
-    layer_name = os.path.splitext(os.path.basename(output_path))[0]
-    cmd = [sys.executable, gdal_polygonize, input_path, "-b", "1", "-f", "GPKG"]
-    if eight_connected:
-        cmd.append("-8")
-    cmd.extend([output_path, layer_name, field_name])
-    label = f"Polygonize binary raster (gdal_polygonize)"
-    print(f"{prefix} {label:>{ACTION_WIDTH}}")
-    t0 = time.perf_counter()
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    dt = time.perf_counter() - t0
-    if result.returncode != 0:
-        raise RuntimeError(f"gdal_polygonize failed:\n{result.stderr}")
-    out_size = size_mib(output_path)
-    print(f"{prefix} {label:>{ACTION_WIDTH}}. Done in {dt:.2f}s, size: {out_size:.2f} MiB")
-    return output_path
-
 
 def alti3d_to_slope30(prefix, dem_path, osm_path_out):
     # Derive intermediate paths based on input filename, placed in output directory
@@ -285,15 +224,13 @@ def alti3d_to_slope30(prefix, dem_path, osm_path_out):
     slope30_detailed_path = f"{base_out}_slope30_detailed.gpkg"
     slope30_path = f"{base_out}_slope30.gpkg"
 
-    dem_out = QgsRasterLayer(dem_path, "DEM")
-
     # 1) Slope
     res2 = run_step(
         prefix,
         f"Compute Slope",
         "qgis:slope",
         {
-            'INPUT': dem_out,
+            'INPUT': dem_path,
             'Z_FACTOR': 1.0,
             'OUTPUT': slope_path
         }
@@ -301,66 +238,51 @@ def alti3d_to_slope30(prefix, dem_path, osm_path_out):
     slope_out = res2['OUTPUT']
 
     # 2) Reclassify slope > threshold
-    slope_layer = QgsRasterLayer(slope_out, "slope")
-    if not slope_layer.isValid():
-        print(f"Error: Failed to load slope raster layer from {slope_out}")
-        return None
-    expr = f'"{slope_layer.name()}@1" > {slope_threshold}'
-    try:
-        res3 = run_step(
-            prefix,
-            f"Reclassify slope > {slope_threshold}",
-            "qgis:rastercalculator",
-            {
-                'EXPRESSION': expr,
-                'LAYERS': [slope_layer],
-                'CELLSIZE': pixel_size,
-                'EXTENT': slope_layer.extent(),
-                'OUTPUT': binary_path
-            }
-        )
-        binary_out = res3['OUTPUT']
-    except Exception as e:
-        print(f"{prefix} Reclassify slope > {slope_threshold}. QGIS calc failed: {e}")
-        binary_out = reclassify_slope_gdal_calc(prefix, slope_out, slope_threshold, binary_path)
+    layer_name = os.path.splitext(os.path.basename(slope_out))[0]
+    expr = f'"{layer_name}@1" > {slope_threshold}'
+    res3 = run_step(
+        prefix,
+        f"Reclassify slope > {slope_threshold}",
+        "qgis:rastercalculator",
+        {
+            'EXPRESSION': expr,
+            'LAYERS': [slope_out],
+            'CELLSIZE': pixel_size,
+            'EXTENT': slope_out,
+            'OUTPUT': binary_path
+        }
+    )
+    binary_out = res3['OUTPUT']
 
     # 3) Sieve
-    try:
-        res_clean = run_step(
-            prefix,
-            f"Sieve binary raster > {min_pixels} pixels",
-            "gdal:sieve",
-            {
-                'INPUT': binary_out,
-                'BAND': 1,
-                'THRESHOLD': min_pixels,
-                'EIGHT_CONNECTEDNESS': False,
-                'OUTPUT': slope_clean_path
-            }
-        )
-        binary_clean = res_clean['OUTPUT']
-    except Exception as e:
-        print(f"{prefix} Sieve binary raster > {min_pixels} pixels. QGIS sieve failed: {e}")
-        binary_clean = sieve_gdal_script(prefix, binary_out, min_pixels, slope_clean_path, False)
+    res_clean = run_step(
+        prefix,
+        f"Sieve binary raster > {min_pixels} pixels",
+        "gdal:sieve",
+        {
+            'INPUT': binary_out,
+            'BAND': 1,
+            'THRESHOLD': min_pixels,
+            'EIGHT_CONNECTEDNESS': False,
+            'OUTPUT': slope_clean_path
+        }
+    )
+    binary_clean = res_clean['OUTPUT']
 
     # 4) Polygonize
-    try:
-        res4 = run_step(
-            prefix,
-            "Polygonize binary raster",
-            "gdal:polygonize",
-            {
-                'INPUT': binary_clean,
-                'BAND': 1,
-                'FIELD': 'slope30',
-                'EIGHT_CONNECTEDNESS': False,
-                'OUTPUT': f"{polygon_path}"
-            }
-        )
-        poly_out = res4['OUTPUT']
-    except Exception as e:
-        print(f"{prefix} Polygonize binary raster. QGIS polygonize failed: {e}")
-        poly_out = polygonize_gdal_script(prefix, binary_clean, polygon_path, "slope30", False)
+    res4 = run_step(
+        prefix,
+        "Polygonize binary raster",
+        "gdal:polygonize",
+        {
+            'INPUT': binary_clean,
+            'BAND': 1,
+            'FIELD': 'slope30',
+            'EIGHT_CONNECTEDNESS': False,
+            'OUTPUT': f"{polygon_path}"
+        }
+    )
+    poly_out = res4['OUTPUT']
 
     # 5) Extract steep areas (value == 1)
     poly_layer = QgsVectorLayer(poly_out, "slope_polys", "ogr")
@@ -411,22 +333,18 @@ def rock_to_vector(prefix, rock_tif_path, output_base_path):
     intermediate_path = f"{output_base_path}_all.gpkg"
     extracted_path = f"{output_base_path}_xtrct.gpkg"
     simplified_path = f"{output_base_path}_smpl.gpkg"
-    try:
-        run_step(
-            prefix,
-            "Polygonize rock raster",
-            "gdal:polygonize",
-            {
-                "INPUT": rock_layer,
-                "BAND": 1,
-                "FIELD": "rock",
-                'EIGHT_CONNECTEDNESS': True,
-                'OUTPUT': intermediate_path
-            }
-        )
-    except Exception as e:
-        print(f"{prefix} Polygonize rock raster. QGIS polygonize failed: {e}")
-        polygonize_gdal_script(prefix, rock_tif_path, intermediate_path, "rock", True)
+    run_step(
+        prefix,
+        "Polygonize rock raster",
+        "gdal:polygonize",
+        {
+            "INPUT": rock_layer,
+            "BAND": 1,
+            "FIELD": "rock",
+            'EIGHT_CONNECTEDNESS': True,
+            'OUTPUT': intermediate_path
+        }
+    )
     rock_poly_layer = QgsVectorLayer(intermediate_path, "rock_polys", "ogr")
     if not rock_poly_layer.isValid():
         print(f"Error: Failed to load polygon layer from {intermediate_path}")
