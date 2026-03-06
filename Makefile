@@ -184,17 +184,8 @@ $(SWISSALTI3D_MERGED_RULES_MK): merge_swissalti3d.py download-swissalti3d
 
 swissalti3d-merged: $(SWISSALTI3D_MERGED_FILES)
 
-#$(WORK_DIR)/swissalti3d_all.vrt:
-##	@mkdir -p $(dir $@)
-#	@find $(SWISSALTI3D_RAW_DIR) -name '*.tif' -print > $@.list
-#	$(GDALBUILDVRT) -input_file_list $@.list $@
-
-#$(WORK_DIR)/swissalti3d_all.tif: $(WORK_DIR)/swissalti3d_all.vrt
-#	$(GDALWARP) -t_srs EPSG:2056 -multi -r bilinear -overwrite $< $@
-
 $(IN_DIR)/skitouren_2056.gpkg.zip:
 	wget --directory-prefix=$(IN_DIR) https://data.geo.admin.ch/ch.swisstopo-karto.skitouren/skitouren/skitouren_2056.gpkg.zip
-
 
 SWISS_SLOPE30_OSMS = $(patsubst %.tif,%.osm,$(SWISSALTI3D_MERGED_FILES))
 %_alti3d.osm: %_alti3d.tif
@@ -203,10 +194,10 @@ print_slope30_osms:
 	@echo $(SWISS_SLOPE30_OSMS)
 slope30_osms: $(SWISS_SLOPE30_OSMS)
 
-SWISS_ROCK_OSMS = $(patsubst swiss-vector25-raw/%/SMV25_CHLV95LN02_RASTER/FELS.tif,work/swiss-rock/rock_%.osm,$(wildcard $(SWISS_VECTOR25_RAW_DIR)/*/SMV25_CHLV95LN02_RASTER/FELS.tif))
+SWISS_ROCK_OSMS = $(patsubst $(SWISS_VECTOR25_1_DIR)/%/SMV25_CHLV95LN02_RASTER/FELS.tif,work/swiss-rock/rock_%.osm,$(wildcard $(SWISS_VECTOR25_1_DIR)/*/SMV25_CHLV95LN02_RASTER/FELS.tif))
 
-work/swiss-rock/rock_%.tif: swiss-vector25-raw/%/SMV25_CHLV95LN02_RASTER/FELS.tif
-	@mkdir -p $(dirname $@)
+work/swiss-rock/rock_%.tif: $(SWISS_VECTOR25_1_DIR)/%/SMV25_CHLV95LN02_RASTER/FELS.tif
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 rock_%.osm: rock_%.tif
