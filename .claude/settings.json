@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/Volumes/T9/Applications/QGIS.app/Contents/MacOS/gdalinfo:*)",
+      "Bash(/Volumes/T9/Applications/QGIS.app/Contents/MacOS/ogrinfo:*)",
+      "Bash(grep:*)"
+    ]
+  }
+}
