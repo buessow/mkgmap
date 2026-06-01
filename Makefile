@@ -17,6 +17,10 @@ OSMOSIS = osmosis-$(OSMOSIS_VERSION)
 SPLITTER = splitter-r654
 MKGMAP = mkgmap-r4923
 
+# Precompiled sea tiles for mkgmap --precomp-sea (replaces generate-sea coastline
+# reconstruction, which floods inland tiles near clipped Geofabrik extract edges).
+SEA_ZIP = $(IN_DIR)/sea-latest.zip
+
 # ISO 3166-1 alpha-3 country codes for middle Europe
 COUNTRY_CODES = \
 	austria:AUT:0043 \
@@ -76,6 +80,9 @@ $(IN_DIR)/%-latest.osm.pbf:
 	rm -f $@
 	wget --directory-prefix=$(IN_DIR) https://download.geofabrik.de/europe/$(notdir $@)
 
+$(SEA_ZIP):
+	wget --directory-prefix=$(IN_DIR) https://www.thkukuk.de/osm/data/sea-latest.zip
+
 $(WORK_DIR)/%-contour.osm.pbf: %.defined
 	@country=$$(basename $@ -contour.osm.pbf); \
 	country3=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:\(...\):..../\1/p"); \
@@ -112,7 +119,7 @@ $(WORK_DIR)/%/split-contour: $(WORK_DIR)/%-contour.osm.pbf $(SPLITTER)/splitter.
 	$$cmd
 	touch $(dir $@)/split-contour
 
-$(OUT_DIR)/osm-oa-%.img: $(WORK_DIR)/%/split $(WORK_DIR)/%/split-contour my.cfg $(MKGMAP)/mkgmap.jar $(STYLE_FILES) $(TYP_FILES) %.defined
+$(OUT_DIR)/osm-oa-%.img: $(WORK_DIR)/%/split $(WORK_DIR)/%/split-contour my.cfg $(MKGMAP)/mkgmap.jar $(STYLE_FILES) $(TYP_FILES) $(SEA_ZIP) %.defined
 	@mkdir -p $(OUT_DIR); \
 	country=$$(basename $@ .img | sed 's/osm-oa-//'); \
 	country3=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:\(...\):..../\1/p"); \
@@ -123,6 +130,7 @@ $(OUT_DIR)/osm-oa-%.img: $(WORK_DIR)/%/split $(WORK_DIR)/%/split-contour my.cfg 
 		java -Xms5g -Xmx16g -XX:+UseParallelGC -Dlog.config=$(ROOT_DIR)/logging.properties -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
 			--style-file=$(ROOT_DIR)/$(STYLE_DIR) \
 			--read-config=$(ROOT_DIR)/my.cfg \
+			--precomp-sea=$(ROOT_DIR)/$(SEA_ZIP) \
 			--mapname=$$id \
 			--country-name=$$country \
 			--country-abbr=$$country3 \
