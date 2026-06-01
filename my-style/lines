@@ -225,7 +225,7 @@ highway=footway {set tmp:stopMopUp=yes} [0x08 road_class=0 road_speed=0 resoluti
 highway=trail {set highway=path; add bicycle=no}  # fix common bad tagging
 
 highway=path & bicycle=yes [0x16 road_class=0 road_speed=0 resolution 23]
-highway=track & mkgmap:unpaved=0 [0x0a road_class=0 road_speed=1 resolution 22]
+highway=track & mkgmap:unpaved=0 [0x06 road_class=0 road_speed=1 resolution 22]
 highway=track [0x0a road_class=0 road_speed=1 resolution 22]
 highway=unsurfaced [0x0a road_class=0 road_speed=1 resolution 22]
 highway=road & mkgmap:unpaved=0 {add mkgmap:dead-end-check=false} [0x06 road_class=0 road_speed=1 resolution 22]
