@@ -116,6 +116,8 @@ highway=path & (bicycle=designated | bicycle=official | cycleway=lane)
     {set highway=cycleway; add foot=yes; set bicycle=yes}
 highway=path & foot=designated
     {set highway=footway}
+highway=path & bicycle=yes
+    {set highway=footway}
 
 route=bicycle {
     set mkgmap:label:1='${ref|highway-symbol:round}';
@@ -224,7 +226,6 @@ highway=footway {set tmp:stopMopUp=yes} [0x08 road_class=0 road_speed=0 resoluti
 
 highway=trail {set highway=path; add bicycle=no}  # fix common bad tagging
 
-highway=path & bicycle=yes [0x16 road_class=0 road_speed=0 resolution 23]
 highway=track & mkgmap:unpaved=0 [0x06 road_class=0 road_speed=1 resolution 22]
 highway=track [0x0a road_class=0 road_speed=1 resolution 22]
 highway=unsurfaced [0x0a road_class=0 road_speed=1 resolution 22]

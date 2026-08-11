@@ -1695,9 +1695,11 @@ CustomColor=No
 [_line]
 Type=0x08
 UseOrientation=N
-Xpm="32 1 2 1"
+Xpm="32 3 2  1"
 "! c #BDCAB4"
 "# c #FFFFFF"
+"!!!!!#####!!!!!#####!!!!!#####!!"
+"!!!!!#####!!!!!#####!!!!!#####!!"
 "!!!!!#####!!!!!#####!!!!!#####!!"
 String1=0x04,pedestrian
 String2=0x03,voetpad
@@ -1979,9 +1981,9 @@ Xpm="0 0 4 0"
 "2 c #7B0000"
 "3 c #FF0000"
 "4 c #FFFFFF"
-String1=0x04,bike path
-String2=0x03,fietspad
-String3=0x02,Radweg
+String1=0x04,road under construction
+String2=0x03,weg in aanbouw
+String3=0x02,Straße im Bau
 ExtendedLabels=Y
 FontStyle=SmallFont
 CustomColor=No
