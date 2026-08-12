@@ -109,12 +109,11 @@ $(WORK_DIR)/%/split: $(IN_DIR)/%-latest.osm.pbf $(SPLITTER)/splitter.jar %.defin
 	$$cmd
 	touch $(dir $@)split
 
-$(WORK_DIR)/%/split-contour: $(WORK_DIR)/%-contour.osm.pbf $(SPLITTER)/splitter.jar %.defined
+$(WORK_DIR)/%/split-contour: $(WORK_DIR)/%-contour.osm.pbf $(WORK_DIR)/%/split $(SPLITTER)/splitter.jar %.defined
 	@country=$$(basename $$(dirname $@) | sed 's/osm-oa-//'); \
 	country3=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:\(...\):..../\1/p"); \
-	dialcode=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:...:\(....\)/\1/p"); \
-	id="21$${dialcode}00"; \
-	cmd="java -jar $(SPLITTER)/splitter.jar --mapid=$$id --output-dir=$(dir $@)/contour $<"; \
+	sed -E 's/^22([0-9]{6}):/21\1:/' $(dir $@)areas.list > $(dir $@)areas-contour.list; \
+	cmd="java -jar $(SPLITTER)/splitter.jar --split-file=$(dir $@)areas-contour.list --output-dir=$(dir $@)/contour $<"; \
 	echo "$$cmd"; \
 	$$cmd
 	touch $(dir $@)/split-contour
