@@ -41,7 +41,7 @@ COUNTRY_CODES = \
 	spain:ESP:0034 \
 	switzerland:CHE:0041
 
-COUNTRIES = austria germany france italy liechtenstein spain switzerland
+COUNTRIES = austria germany france italy liechtenstein poland spain switzerland
 
 # Convert country name to ISO code
 country_to_iso = $(word 2,$(subst :, ,$(filter $(1):%,$(COUNTRY_CODES))))
@@ -98,12 +98,15 @@ $(WORK_DIR)/%-filtered.osm.pbf: $(IN_DIR)/%-latest.osm.pbf osmosis.args
 	echo $cmd; \
 	$cmd
 
+# Map IDs: <type><4-digit dial code><3-digit tile>, type 5=overview, 6=tiles,
+# 7=contour tiles. Each country gets its own 1000-ID range; IDs must be unique
+# across all maps on the device or tiles with the same ID hide each other.
 #$(WORK_DIR)/%/split: $(WORK_DIR)/%-filtered.osm.pbf $(SPLITTER) Makefile
 $(WORK_DIR)/%/split: $(IN_DIR)/%-latest.osm.pbf $(SPLITTER)/splitter.jar %.defined
 	@country=$$(basename $$(dirname $@) | sed 's/osm-oa-//'); \
 	country3=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:\(...\):..../\1/p"); \
 	dialcode=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:...:\(....\)/\1/p"); \
-	id="22$${dialcode}00"; \
+	id="6$${dialcode}000"; \
 	cmd="java -jar $(SPLITTER)/splitter.jar --mapid=$$id --output-dir=$(dir $@) $<"; \
 	echo "$$cmd"; \
 	$$cmd
@@ -112,7 +115,7 @@ $(WORK_DIR)/%/split: $(IN_DIR)/%-latest.osm.pbf $(SPLITTER)/splitter.jar %.defin
 $(WORK_DIR)/%/split-contour: $(WORK_DIR)/%-contour.osm.pbf $(WORK_DIR)/%/split $(SPLITTER)/splitter.jar %.defined
 	@country=$$(basename $$(dirname $@) | sed 's/osm-oa-//'); \
 	country3=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:\(...\):..../\1/p"); \
-	sed -E 's/^22([0-9]{6}):/21\1:/' $(dir $@)areas.list > $(dir $@)areas-contour.list; \
+	sed -E 's/^6([0-9]{7}):/7\1:/' $(dir $@)areas.list > $(dir $@)areas-contour.list; \
 	cmd="java -jar $(SPLITTER)/splitter.jar --split-file=$(dir $@)areas-contour.list --output-dir=$(dir $@)/contour $<"; \
 	echo "$$cmd"; \
 	$$cmd
@@ -122,8 +125,8 @@ $(OUT_DIR)/osm-oa-%.img: $(WORK_DIR)/%/split $(WORK_DIR)/%/split-contour my.cfg 
 	@mkdir -p $(OUT_DIR); \
 	country=$$(basename $@ .img | sed 's/osm-oa-//'); \
 	country3=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:\(...\):..../\1/p"); \
-	dialcode=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:...:\(...\)/\1/p"); \
-	id="20$${dialcode}00"; \
+	dialcode=$$(echo $(COUNTRY_CODES) | tr ' ' '\n' | sed -n "s/$$country:...:\(....\)/\1/p"); \
+	id="5$${dialcode}000"; \
 	fid=1$$dialcode; \
 	cmd="cd $(WORK_DIR)/$$country; \
 		java -Xms5g -Xmx16g -XX:+UseParallelGC -Dlog.config=$(ROOT_DIR)/logging.properties -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
