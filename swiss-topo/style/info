@@ -1,0 +1,8 @@
+# Style for Swiss topo maps built from swiss-map-vector25 by vector25_to_osm.py.
+# It only has to handle the tags that converter emits, not general OSM data.
+summary: Swiss topo (Vector25)
+version=1.0
+description {
+Topographic style for swisstopo Vector25 data: hiking trail classes,
+contours by surface, rock, scree and glacier areas.
+}

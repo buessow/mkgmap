@@ -1,0 +1,1609 @@
+; TYP for the Swiss topo (Vector25) map, see swiss-topo/style.
+; Colours tuned for transflective (MIP) watch displays: saturated, few tones.
+; Hiking trails follow the Swiss signage: yellow = Wanderweg (T1),
+; red = Bergwanderweg (T2-T3), blue = Alpinwanderweg (T4+).
+
+[_id]
+ProductCode=1
+FID=30005
+CodePage=1252
+[end]
+
+[_drawOrder]
+Type=0x50,1
+Type=0x4e,1
+Type=0x17,1
+Type=0x18,1
+Type=0x19,1
+Type=0x1a,1
+Type=0x0b,1
+Type=0x0c,1
+Type=0x0e,1
+Type=0x57,2
+Type=0x56,2
+Type=0x55,3
+Type=0x58,3
+Type=0x54,3
+Type=0x59,4
+Type=0x4d,4
+Type=0x3c,5
+Type=0x46,5
+Type=0x3f,5
+Type=0x5a,5
+Type=0x05,6
+Type=0x13,7
+[end]
+
+[_polygon]
+Type=0x50
+String=Forest
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #AAFFAA"
+[end]
+
+[_polygon]
+Type=0x4e
+String=Vineyard/orchard
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #D2E6A5"
+[end]
+
+[_polygon]
+Type=0x17
+String=Park
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #C8E6B4"
+[end]
+
+[_polygon]
+Type=0x18
+String=Golf course
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #C8E6B4"
+[end]
+
+[_polygon]
+Type=0x19
+String=Sport/camp site
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #DCEBC8"
+[end]
+
+[_polygon]
+Type=0x1a
+String=Cemetery
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #C8D2C3"
+[end]
+
+[_polygon]
+Type=0x0b
+String=Hospital
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #F0DCDC"
+[end]
+
+[_polygon]
+Type=0x0c
+String=Industrial
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #DCD7D2"
+[end]
+
+[_polygon]
+Type=0x0e
+String=Runway
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #BEBEBE"
+[end]
+
+[_polygon]
+Type=0x05
+String=Parking
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #E6E6E6"
+[end]
+
+[_polygon]
+Type=0x13
+String=Building
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #6E6E6E"
+[end]
+
+[_polygon]
+Type=0x3c
+String=Lake
+FontStyle=NormalFont
+Xpm="0 0 1 0"
+"1 c #55AAFF"
+CustomColor=Day
+DaycustomColor:#1E64C8
+[end]
+
+[_polygon]
+Type=0x46
+String=River
+FontStyle=SmallFont
+Xpm="0 0 1 0"
+"1 c #55AAFF"
+CustomColor=Day
+DaycustomColor:#1E64C8
+[end]
+
+[_polygon]
+Type=0x3f
+String=Basin
+FontStyle=SmallFont
+Xpm="0 0 1 0"
+"1 c #55AAFF"
+CustomColor=Day
+DaycustomColor:#1E64C8
+[end]
+
+[_polygon]
+Type=0x4d
+String=Glacier
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #AAE6FF"
+[end]
+
+[_polygon]
+Type=0x54
+String=Rock
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #AAAAAA"
+[end]
+
+[_polygon]
+Type=0x56
+String=Scree
+FontStyle=NoLabel (invisible)
+Xpm="32 32 2 1"
+"1 c #FFFFAA"
+"2 c #AA5500"
+"21112111211121112111211121112111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11211121112111211121112111211121"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"21112111211121112111211121112111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11211121112111211121112111211121"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"21112111211121112111211121112111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11211121112111211121112111211121"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"21112111211121112111211121112111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11211121112111211121112111211121"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"21112111211121112111211121112111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11211121112111211121112111211121"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"21112111211121112111211121112111"
+"11111111111111111111111111111111"
+[end]
+
+[_polygon]
+Type=0x5a
+String=Escarpment
+FontStyle=NoLabel (invisible)
+Xpm="0 0 1 0"
+"1 c #8C6446"
+[end]
+
+[_polygon]
+Type=0x59
+String=Snowfield / dead ice
+FontStyle=NoLabel (invisible)
+Xpm="32 32 2 1"
+"1 c #FFFFFF"
+"2 c #AAFFFF"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+"21212121212121212121212121212121"
+"12121212121212121212121212121212"
+[end]
+
+[_polygon]
+Type=0x55
+String=Sparse rock
+FontStyle=NoLabel (invisible)
+Xpm="32 32 2 1"
+"1 c #FFFFFF"
+"2 c #AAAAAA"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+"21212121212121212121212121212121"
+"11111111111111111111111111111111"
+[end]
+
+[_polygon]
+Type=0x57
+String=Sparse scree
+FontStyle=NoLabel (invisible)
+Xpm="32 32 2 1"
+"1 c #FFFFFF"
+"2 c #AA5500"
+"21111121111121111121111121111121"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11121111121111121111121111121111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"21111121111121111121111121111121"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11121111121111121111121111121111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"21111121111121111121111121111121"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11121111121111121111121111121111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"21111121111121111121111121111121"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11121111121111121111121111121111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+[end]
+
+[_polygon]
+Type=0x58
+String=Boulders
+FontStyle=NoLabel (invisible)
+Xpm="32 32 2 1"
+"1 c #FFFFFF"
+"2 c #555555"
+"22111122111122111122111122111122"
+"22111122111122111122111122111122"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"22111122111122111122111122111122"
+"22111122111122111122111122111122"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"22111122111122111122111122111122"
+"22111122111122111122111122111122"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"22111122111122111122111122111122"
+"22111122111122111122111122111122"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"22111122111122111122111122111122"
+"22111122111122111122111122111122"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"22111122111122111122111122111122"
+"22111122111122111122111122111122"
+[end]
+
+[_line]
+Type=0x01
+String=Motorway
+UseOrientation=N
+LineWidth=3
+BorderWidth=1
+Xpm="0 0 2 0"
+"1 c #FFAA00"
+"2 c #000000"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x09
+String=Motorway ramp
+UseOrientation=N
+LineWidth=2
+BorderWidth=1
+Xpm="0 0 2 0"
+"1 c #FFAA00"
+"2 c #000000"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x02
+String=Trunk road
+UseOrientation=N
+LineWidth=3
+BorderWidth=1
+Xpm="0 0 2 0"
+"1 c #FFAA00"
+"2 c #000000"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x03
+String=Through road
+UseOrientation=N
+LineWidth=3
+BorderWidth=1
+Xpm="0 0 2 0"
+"1 c #FFAAAA"
+"2 c #000000"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x04
+String=Connecting road
+UseOrientation=N
+LineWidth=3
+BorderWidth=1
+Xpm="0 0 2 0"
+"1 c #FFFF55"
+"2 c #000000"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x05
+String=Road (6-10 m)
+UseOrientation=N
+LineWidth=2
+BorderWidth=1
+Xpm="0 0 2 0"
+"1 c #FFFFFF"
+"2 c #000000"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x06
+String=Minor road
+UseOrientation=N
+LineWidth=1
+BorderWidth=1
+Xpm="0 0 2 0"
+"1 c #FFFFFF"
+"2 c #000000"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x07
+String=Service road
+UseOrientation=N
+LineWidth=1
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #000000"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x0b
+String=Paved track
+UseOrientation=N
+LineWidth=1
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #000000"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x0a
+String=Track
+UseOrientation=Y
+Xpm="32 1 2 1"
+"1 c #000000"
+"  c none"
+"11111111   11111111   11111111  "
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x0e
+String=Hiking trail (T1)
+UseOrientation=Y
+Xpm="32 2 2 1"
+"1 c #000000"
+"  c none"
+"1111   1111   1111   1111   1111"
+"1111   1111   1111   1111   1111"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x0f
+String=Mountain trail (T2-T3)
+UseOrientation=Y
+Xpm="32 2 2 1"
+"1 c #000000"
+"  c none"
+"1111   1111   1111   1111   1111"
+"1111   1111   1111   1111   1111"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x10
+String=Alpine trail (T4+)
+UseOrientation=Y
+Xpm="32 2 2 1"
+"1 c #000000"
+"  c none"
+"1111   1111   1111   1111   1111"
+"1111   1111   1111   1111   1111"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x16
+String=Path
+UseOrientation=Y
+Xpm="32 2 2 1"
+"1 c #000000"
+"  c none"
+"1111   1111   1111   1111   1111"
+"1111   1111   1111   1111   1111"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x0d
+String=Faint path
+UseOrientation=Y
+Xpm="32 2 2 1"
+"1 c #000000"
+"  c none"
+"111     111     111     111     "
+"111     111     111     111     "
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x12
+String=Marked route
+UseOrientation=Y
+Xpm="32 2 2 1"
+"1 c #000000"
+"  c none"
+"1  1  1  1  1  1  1  1  1  1  1 "
+"1  1  1  1  1  1  1  1  1  1  1 "
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x11
+String=Via ferrata
+UseOrientation=Y
+Xpm="32 2 2 1"
+"1 c #000000"
+"  c none"
+"1111111111    1111111111    1111"
+"1111111111    1111111111    1111"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x13
+String=Steps
+UseOrientation=Y
+Xpm="32 3 2 1"
+"1 c #323232"
+"  c none"
+"1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 "
+"1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 "
+"1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 "
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x1b
+String=Ferry
+UseOrientation=N
+LineWidth=1
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #3C78C8"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x14
+String=Railway
+UseOrientation=Y
+Xpm="32 3 2 1"
+"1 c #000000"
+"2 c #FFFFFF"
+"11111111111111111111111111111111"
+"11111111222222221111111122222222"
+"11111111111111111111111111111111"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x2c
+String=Railway tunnel
+UseOrientation=Y
+Xpm="32 2 2 1"
+"1 c #000000"
+"  c none"
+"11111   11111   11111   11111   "
+"11111   11111   11111   11111   "
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x10f01
+String=Cable car / gondola
+UseOrientation=Y
+Xpm="32 3 2 1"
+"1 c #FF0000"
+"  c none"
+"             111                "
+"11111111111111111111111111111111"
+"             111                "
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x10f02
+String=Chair lift
+UseOrientation=Y
+Xpm="32 3 2 1"
+"1 c #FF0000"
+"  c none"
+"              11                "
+"11111111111111111111111111111111"
+"              11                "
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x10f03
+String=Drag lift
+UseOrientation=Y
+Xpm="32 3 2 1"
+"1 c #FFAA00"
+"  c none"
+"1       1       1       1       "
+"11111111111111111111111111111111"
+"1       1       1       1       "
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x10f04
+String=Goods cable
+UseOrientation=N
+LineWidth=1
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #000000"
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x1f
+String=River
+UseOrientation=N
+LineWidth=3
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #0055FF"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x18
+String=Stream
+UseOrientation=N
+LineWidth=1
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #0055FF"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x10a02
+String=Dry stream
+UseOrientation=Y
+Xpm="32 1 2 1"
+"1 c #2882DC"
+"  c none"
+"1111   1111   1111   1111   1111"
+FontStyle=NoLabel (invisible)
+CustomColor=Day
+DaycustomColor:#1E64C8
+[end]
+
+[_line]
+Type=0x10a03
+String=Bisse
+UseOrientation=Y
+Xpm="32 1 2 1"
+"1 c #2882DC"
+"  c none"
+"111111  111111  111111  111111  "
+FontStyle=SmallFont
+CustomColor=Day
+DaycustomColor:#1E64C8
+[end]
+
+[_line]
+Type=0x20
+UseOrientation=N
+LineWidth=1
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #AA5500"
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x22
+String=Contour 100 m
+UseOrientation=N
+LineWidth=2
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #AA5500"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x10c01
+UseOrientation=N
+LineWidth=1
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #555555"
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x10c02
+String=Contour 100 m on rock
+UseOrientation=N
+LineWidth=2
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #555555"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x10c03
+UseOrientation=N
+LineWidth=1
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #555555"
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x10c04
+String=Contour 100 m on scree
+UseOrientation=N
+LineWidth=2
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #555555"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x08
+String=Road tunnel
+UseOrientation=Y
+Xpm="32 5 2 1"
+"1 c #F0C060"
+"2 c #404040"
+"22222211112222221111222222111122"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"11111111111111111111111111111111"
+"22222211112222221111222222111122"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x0c
+String=Road tunnel (minor road)
+UseOrientation=Y
+Xpm="32 3 2 1"
+"1 c #000000"
+"  c none"
+"1111   1111   1111   1111   1111"
+"                                "
+"1111   1111   1111   1111   1111"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x10e15
+String=Water name
+UseOrientation=Y
+Xpm="32 1 2 1"
+"1 c #0055FF"
+"  c none"
+"                                "
+FontStyle=SmallFont
+CustomColor=Day
+DaycustomColor:#0055FF
+[end]
+
+[_line]
+Type=0x10e16
+String=Bridge
+UseOrientation=Y
+Xpm="32 5 2 1"
+"1 c #000000"
+"  c none"
+"11111111111111111111111111111111"
+"                                "
+"                                "
+"                                "
+"11111111111111111111111111111111"
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x10e10
+String=Avalanche barrier
+UseOrientation=Y
+Xpm="32 2 2 1"
+"1 c #505050"
+"  c none"
+"11111111111111111111111111111111"
+"1   1   1   1   1   1   1   1   "
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x10012
+String=Wall
+UseOrientation=N
+LineWidth=1
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #646464"
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x10e11
+String=Pier
+UseOrientation=N
+LineWidth=2
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #8C8C8C"
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x28
+String=Pipeline
+UseOrientation=Y
+Xpm="32 1 2 1"
+"1 c #787878"
+"  c none"
+"11111111  11111111  11111111  11"
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x29
+String=Power line
+UseOrientation=N
+LineWidth=1
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #787878"
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x1e
+String=National border
+UseOrientation=Y
+Xpm="32 3 2 1"
+"1 c #B4148C"
+"  c none"
+"1111111111  11  1111111111  11  "
+"1111111111  11  1111111111  11  "
+"1111111111  11  1111111111  11  "
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x1d
+String=Canton border
+UseOrientation=Y
+Xpm="32 2 2 1"
+"1 c #B4148C"
+"  c none"
+"1111111111    1111111111    1111"
+"1111111111    1111111111    1111"
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x10c05
+UseOrientation=N
+LineWidth=1
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #0055FF"
+FontStyle=NoLabel (invisible)
+[end]
+
+[_line]
+Type=0x10c06
+String=Contour 100 m on glacier
+UseOrientation=N
+LineWidth=2
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #0055FF"
+FontStyle=SmallFont
+[end]
+
+[_line]
+Type=0x10e12
+String=Crevasse
+UseOrientation=N
+LineWidth=1
+BorderWidth=0
+Xpm="0 0 1 0"
+"1 c #2E78C2"
+FontStyle=NoLabel (invisible)
+[end]
+
+
+; Points (copied from typ-files/20011.txt; BaseCamp needs every used point type defined)
+[_point]
+Type=0x009
+SubType=0x00
+String1=0x04,place
+ExtendedLabels=Y
+FontStyle=LargeFont
+CustomColor=Day
+DaycustomColor:#414141
+DayXpm="1 1 1 1"
+"  	c none"
+" "
+[end]
+
+[_point]
+Type=0x00a
+SubType=0x00
+String1=0x04,place
+ExtendedLabels=Y
+FontStyle=NormalFont
+CustomColor=No
+DayXpm="1 1 1 1"
+"  	c none"
+" "
+[end]
+
+[_point]
+Type=0x00b
+SubType=0x00
+String1=0x04,place
+ExtendedLabels=Y
+FontStyle=NormalFont
+CustomColor=No
+DayXpm="1 1 1 1"
+"  	c none"
+" "
+[end]
+
+[_point]
+Type=0x01e
+SubType=0x00
+String1=0x04,region
+String2=0x03,regio
+String3=0x02,Regio
+ExtendedLabels=Y
+FontStyle=NormalFont
+CustomColor=Day
+DaycustomColor:#BD95FF
+DayXpm="20 20 2 1"   Colormode=16
+"!	c #FFFFFF"
+"  	c none"
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+;12345678901234567890
+[end]
+
+[_point]
+Type=0x02b
+SubType=0x02
+String1=0x04,hostel
+String2=0x03,hostel
+String3=0x02,Hostel
+ExtendedLabels=Y
+FontStyle=SmallFont
+CustomColor=No
+DayXpm="20 20 2 1"   Colormode=16
+"!	c #000000"
+"  	c none"
+"                    "
+"                    "
+"        !!          "
+"       !!!!         "
+"      !!!!!!        "
+"     !!!!!!!!       "
+"    !!!!!!!!!!      "
+"   !!!!!!!!!!!!     "
+"  !!!!!!!!!!!!!!    "
+" !!!!!!!!!!!!!!!!   "
+"!!!!!!!!!!!!!!!!!!  "
+"   !!!      !!!     "
+"   !!!      !!!     "
+"   !!!      !!!     "
+"   !!!      !!!     "
+"   !!!      !!!     "
+"   !!!      !!!     "
+"   !!!      !!!     "
+"   !!!      !!!     "
+"                    "
+;12345678901234567890
+[end]
+
+[_point]
+Type=0x02b
+SubType=0x03
+String1=0x04,caravan site/RV-park
+String2=0x03,Camperplaats
+String3=0x02,Wohnmobil-Stellpl�tze
+ExtendedLabels=Y
+FontStyle=NoLabel (invisible)
+CustomColor=No
+DayXpm="20 20 5 1"   Colormode=16
+"!	c #0092DA"
+"#	c #7EC8EC"
+"%	c #FAFDFE"
+"?	c #FFFFFF"
+"  	c none"
+"                    "
+"                    "
+"  #!!!!!!!!!!!!!!#  "
+"  !!!!!!!!!!!!!!!!  "
+"  !!!!!!!!!!!!!!!!  "
+"  !!!!!!!!!!!!!!!!  "
+"  !!###########!!!  "
+"  !#??????????%!!!  "
+"  !#?#####?###%#!!  "
+"  !#?#####?###?#!!  "
+"  !#???????????#!!  "
+"  !#??????%????#!!  "
+"  !!%??%###%?????!  "
+"  !!!!!!###!!!!!!!  "
+"  !!!!!!!#!!!!!!!!  "
+"  !!!!!!!!!!!!!!!!  "
+"  !!!!!!!!!!!!!!!!  "
+"  #!!!!!!!!!!!!!!#  "
+"                    "
+"                    "
+;12345678901234567890
+[end]
+
+[_point]
+Type=0x02b
+SubType=0x07
+ExtendedLabels=Y
+FontStyle=SmallFont
+DayXpm="5 5 2 1"   Colormode=16
+"!	c #000000"
+"  	c none"
+"     "
+" !!! "
+" !!! "
+" !!! "
+"     "
+[end]
+
+[_point]
+Type=0x02c
+SubType=0x02
+String1=0x04,museum
+String2=0x03,museum
+String3=0x02,Museum
+ExtendedLabels=Y
+FontStyle=SmallFont
+CustomColor=No
+DayXpm="19 18 7 1"   Colormode=16
+"!	c #FFFFFF"
+"#	c #399500"
+"%	c #E6E6E6"
+"?	c #BDFF8B"
+"$	c #BDCA8B"
+"*	c #7BCA6A"
+"  	c none"
+"                   "
+"         !!        "
+"        !!!!       "
+"       !!!!!!      "
+"      !!#%%#!!     "
+"     !!!####!!!    "
+"    !!!!#?$#!!!!   "
+"   !!!!!#!!#!!!!!  "
+"  !!!!!!!!!!!!!!!! "
+" !################!"
+" ##!!#*!#!!#!*#!!##"
+" ##!!#*!#!!#!*#!!##"
+" ##!!#*!#!!#!*#!!##"
+" ##!!#*!#!!#!*#!!##"
+" ##!!#*!#!!#!*#!!##"
+" ##!!#*!#!!#!*#!!##"
+" ##################"
+" !!!!!!!!!!!!!!!!!!"
+;1234567890123456789
+[end]
+
+[_point]
+Type=0x02c
+SubType=0x0b
+String1=0x04,place of worship
+String2=0x03,religieus gebouw
+String3=0x02,Andachtsort
+String4=0x01,lieu de culte
+ExtendedLabels=Y
+FontStyle=SmallFont
+CustomColor=Day
+DaycustomColor:#7B3041
+DayXpm="20 20 2 1"   Colormode=16
+"!	c #000000"
+"  	c none"
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"         !          "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+;12345678901234567890
+[end]
+
+[_point]
+Type=0x02f
+SubType=0x08
+String1=0x04,bus_stop
+ExtendedLabels=Y
+FontStyle=NoLabel (invisible)
+CustomColor=No
+DayXpm="25 25 3 1"   Colormode=16
+"!	c #626262"
+"#	c #FFFFFF"
+"  	c none"
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"          ####           "
+"          #!!#           "
+"          #!!#           "
+"          ####           "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+;1234567890123456789012345
+[end]
+
+[_point]
+Type=0x02f
+SubType=0x17
+String1=0x04,Station
+String2=0x03,Station
+String3=0x02,Bahnhof
+ExtendedLabels=Y
+FontStyle=SmallFont
+CustomColor=Day
+DaycustomColor:#000041
+DayXpm="16 16 5 1"   Colormode=16
+"!	c #7BCAFF"
+"#	c #3995FF"
+"%	c #0095FF"
+"?	c #FFFFFF"
+"  	c none"
+" !#%%%%%%%%%%#! "
+"!%%%%??????%%%%!"
+"#%%%?%%??%%?%%%#"
+"%%%%%%?%%?%%%%%%"
+"%%%%%??????%%%%%"
+"%%%%????????%%%%"
+"%%%%?%%%%%%?%%%%"
+"%%%%??%%%%??%%%%"
+"%%%%????????%%%%"
+"%%%%?%????%?%%%%"
+"%%%%????????%%%%"
+"%%%%%??????%%%%%"
+"%%%%%?%%%%?%%%%%"
+"#%%%????????%%%#"
+"!%%?%%%%%%%%?%%!"
+" !#%%%%%%%%%%#! "
+;1234567890123456
+[end]
+
+[_point]
+Type=0x050
+SubType=0x00
+ExtendedLabels=Y
+FontStyle=SmallFont
+DayXpm="5 5 2 1"   Colormode=16
+"!	c #000000"
+"  	c none"
+"     "
+" !!! "
+" !!! "
+" !!! "
+"     "
+[end]
+
+[_point]
+Type=0x063
+SubType=0x00
+ExtendedLabels=Y
+FontStyle=SmallFont
+DayXpm="5 5 2 1"   Colormode=16
+"!	c #000000"
+"  	c none"
+"     "
+" !!! "
+" !!! "
+" !!! "
+"     "
+[end]
+
+[_point]
+Type=0x064
+SubType=0x17
+String1=0x04,summit cross
+ExtendedLabels=Y
+FontStyle=SmallFont
+CustomColor=Day
+DaycustomColor:#202020
+DayXpm="7 9 2 1"
+"!	c #000000"
+"  	c none"
+"   !   "
+"   !   "
+"!!!!!!!"
+"   !   "
+"   !   "
+"   !   "
+"   !   "
+"   !   "
+"   !   "
+[end]
+
+[_point]
+Type=0x064
+SubType=0x06
+String1=0x04,pass, saddle
+ExtendedLabels=Y
+FontStyle=NormalFont
+CustomColor=Day
+DaycustomColor:#202020
+DayXpm="9 9 2 1"   Colormode=16
+"!	c #000000"
+"  	c none"
+"!!     !!"
+"!!!   !!!"
+" !!! !!! "
+"  !!!!!  "
+"   !!!   "
+"  !!!!!  "
+" !!! !!! "
+"!!!   !!!"
+"!!     !!"
+[end]
+
+[_point]
+Type=0x064
+SubType=0x11
+String1=0x04,tower
+String2=0x03,toren
+String3=0x02,Turm
+ExtendedLabels=N
+DayXpm="20 20 3 1"   Colormode=16
+"!	c #000000"
+"#	c #FFFFFF"
+"  	c none"
+"                    "
+"                    "
+"                    "
+"                    "
+"         !          "
+"        !!!         "
+"       !!!!!        "
+"       !!!!!        "
+"       !!!!!        "
+"       !!!!!        "
+"       !!!!!        "
+"       !!!!!        "
+"       !!!!!        "
+"       !!!!!        "
+"       !!!!!        "
+"      !!!!!!!       "
+"                    "
+"                    "
+"                    "
+"                    "
+;12345678901234567890
+[end]
+
+[_point]
+Type=0x065
+SubType=0x0a
+String1=0x04,glacier
+String2=0x03,gletsjer
+ExtendedLabels=Y
+FontStyle=NormalFont
+CustomColor=Day
+DaycustomColor:#414141
+DayXpm="16 16 2 1"   Colormode=16
+"!	c #FFFFFF"
+"  	c none"
+"                "
+"                "
+"                "
+"                "
+"                "
+"                "
+"                "
+"                "
+"                "
+"                "
+"                "
+"                "
+"                "
+"                "
+"                "
+"                "
+;1234567890123456
+[end]
+
+[_point]
+Type=0x065
+SubType=0x0c
+ExtendedLabels=Y
+FontStyle=SmallFont
+DayXpm="1 1 1 1"
+"  	c none"
+" "
+[end]
+
+[_point]
+Type=0x065
+SubType=0x11
+String1=0x04,spring
+String2=0x03,bron
+String3=0x02,Quelle
+ExtendedLabels=N
+DayXpm="20 20 3 1"   Colormode=16
+"!	c #0000D5"
+"#	c #FFFFFF"
+"  	c none"
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"       !   !        "
+"      ! ! ! !       "
+"         !          "
+"        !!!         "
+"        !!!         "
+"        !!!         "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+;12345678901234567890
+[end]
+
+[_point]
+Type=0x066
+SubType=0x01
+String1=0x04,cave
+String2=0x03,grot
+String3=0x02,H�hlen
+ExtendedLabels=Y
+FontStyle=NoLabel (invisible)
+CustomColor=No
+DayXpm="20 20 2 1"   Colormode=16
+"!	c #000000"
+"  	c none"
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"       !!!!!!       "
+"      !!!!!!!!      "
+"     !!!!  !!!!     "
+"     !!!    !!!!    "
+"    !!!      !!!    "
+"   !!!        !!!   "
+"   !!!        !!!   "
+"  !!!!        !!!!  "
+"  !!!!        !!!!  "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+;12345678901234567890
+[end]
+
+[_point]
+Type=0x066
+SubType=0x03
+ExtendedLabels=Y
+FontStyle=NoLabel (invisible)
+CustomColor=No
+DayXpm="25 25 2 1"   Colormode=16
+"!	c #FFFFFF"
+"  	c none"
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+"                         "
+;1234567890123456789012345
+[end]
+
+[_point]
+Type=0x066
+SubType=0x05
+ExtendedLabels=Y
+FontStyle=SmallFont
+DayXpm="1 1 1 1"
+"  	c none"
+" "
+[end]
+
+[_point]
+Type=0x066
+SubType=0x14
+String1=0x04,natural/geological poi
+String2=0x03,natuur/geologie
+ExtendedLabels=Y
+FontStyle=NoLabel (invisible)
+CustomColor=No
+DayXpm="20 20 4 1"   Colormode=16
+"!	c #FFFFFF"
+"#	c #393000"
+"%	c #7B6500"
+"  	c none"
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"       ####         "
+"       #!%##        "
+"      #!!!%##       "
+"      #!!!%##       "
+"      #!!%%##       "
+"       #%%###       "
+"        ####        "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+"                    "
+;12345678901234567890
+[end]
+
+[_point]
+Type=0x066
+SubType=0x16
+String1=0x04,hill, mountain peak
+String2=0x03,heuvel, bergtop
+String3=0x02,H�gel, Berggipfel
+ExtendedLabels=Y
+FontStyle=NormalFont
+CustomColor=Day
+DaycustomColor:#202020
+DayXpm="9 9 2 1"   Colormode=16
+"!	c #000000"
+"  	c none"
+"    !    "
+"    !    "
+"    !    "
+"    !    "
+"!!!!!!!!!"
+"    !    "
+"    !    "
+"    !    "
+"    !    "
+[end]
+
+[_point]
+Type=0x066
+SubType=0x17
+ExtendedLabels=Y
+FontStyle=SmallFont
+DayXpm="1 1 1 1"
+"  	c none"
+" "
+[end]

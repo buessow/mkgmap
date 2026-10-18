@@ -69,16 +69,16 @@ Xpm="0 0 1 0"
 Type=0x010001
 String=Skiroute
 ExtendedLabels=Y
-FontStyle=SmallFont
+FontStyle=NoLabel (invisible)
 CustomColor=Day
-DayCustomColor:#FF5500
+DayCustomColor:#AA0000
 LineWidth=0
 BorderWidth=0
 UseOrientation=Y
 Xpm="32 5 4  1"
-"! c #FF5555"
+"! c #AA0000"
 "  c none"
-"3 c #FF5555"
+"3 c #AA0000"
 "4 c none"
 "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 "!!!     !!!     !!!     !!!     "

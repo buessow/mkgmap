@@ -1,0 +1,8 @@
+# Style options.
+
+# Level 19 gives the watch a lighter intermediate level, so it draws less data
+# while panning at medium zoom. mkgmap allows at most 8 levels.
+levels = 0:24, 1:23, 2:22, 3:21, 4:20, 5:19, 6:18, 7:16
+
+# overview-levels continue the level numbering with coarser resolutions.
+overview-levels = 8:15, 9:14, 10:13

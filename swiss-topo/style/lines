@@ -1,0 +1,110 @@
+# -------------------------------------------------------------------
+# Lines for the Swiss topo (Vector25) map.
+# Input tags come from vector25_to_osm.py.
+# Types 0x01-0x13, 0x16 and 0x1a/0x1b are routable. Extended types (0x1xxxx)
+# are display-only and are defined in swiss-topo-typ.txt.
+# -------------------------------------------------------------------
+
+# Bridges on tracks and paths: display-only casing (two black edges, transparent middle). The
+# way itself is 1-2 px, so the 5 px casing stays visible beside it. Roads already have a casing.
+(highway=track | highway=path | highway=steps | highway=via_ferrata) & bridge=yes [0x10e16 resolution 21 continue]
+
+# Tunnels and avalanche galleries: own routable types with a dashed look (the watch draws
+# roads above display-only overlays, so an overlay does not show). road_class and road_speed
+# are those of the road, so routing is unchanged. 0x08: major roads, 0x0c: minor roads.
+highway=motorway & (tunnel=yes | tunnel=avalanche_protector) [0x08 road_class=4 road_speed=7 resolution 14]
+highway=trunk & (tunnel=yes | tunnel=avalanche_protector) [0x08 road_class=4 road_speed=5 resolution 16]
+highway=primary & (tunnel=yes | tunnel=avalanche_protector) [0x08 road_class=3 road_speed=4 resolution 18]
+highway=secondary & (tunnel=yes | tunnel=avalanche_protector) [0x08 road_class=2 road_speed=3 resolution 19]
+highway=motorway_link & (tunnel=yes | tunnel=avalanche_protector) [0x08 road_class=3 road_speed=3 resolution 20]
+highway=tertiary & (tunnel=yes | tunnel=avalanche_protector) [0x0c road_class=1 road_speed=2 resolution 20]
+highway=unclassified & (tunnel=yes | tunnel=avalanche_protector) [0x0c road_class=0 road_speed=2 resolution 21]
+highway=service & (tunnel=yes | tunnel=avalanche_protector) [0x0c road_class=0 road_speed=1 resolution 22]
+
+# Roads
+highway=motorway [0x01 road_class=4 road_speed=7 resolution 14]
+highway=motorway_link [0x09 road_class=3 road_speed=3 resolution 20]
+highway=trunk [0x02 road_class=4 road_speed=5 resolution 16]
+highway=primary [0x03 road_class=3 road_speed=4 resolution 18]
+highway=secondary [0x04 road_class=2 road_speed=3 resolution 19]
+highway=tertiary [0x05 road_class=1 road_speed=2 resolution 20]
+highway=unclassified [0x06 road_class=0 road_speed=2 resolution 21]
+highway=service [0x07 road_class=0 road_speed=1 resolution 22]
+
+# Tracks (2 m wide ways)
+highway=track & surface=paved [0x0b road_class=0 road_speed=1 resolution 22]
+highway=track [0x0a road_class=0 road_speed=1 resolution 22]
+
+# Trails: own types per Swiss hiking class (for the name on tap), drawn like other paths
+# (black dashes, as on the national map).
+highway=via_ferrata [0x11 road_class=0 road_speed=0 resolution 22]
+highway=steps [0x13 road_class=0 road_speed=0 resolution 23]
+highway=path & sac_scale=alpine_hiking [0x10 road_class=0 road_speed=0 resolution 21]
+highway=path & sac_scale=mountain_hiking [0x0f road_class=0 road_speed=0 resolution 21]
+highway=path & sac_scale=hiking [0x0e road_class=0 road_speed=0 resolution 21]
+highway=path & trail_visibility=intermediate [0x12 road_class=0 road_speed=0 resolution 22]
+highway=path & trail_visibility=bad [0x0d road_class=0 road_speed=0 resolution 23]
+highway=path [0x16 road_class=0 road_speed=0 resolution 22]
+
+route=ferry {set mkgmap:ferry=1} [0x1b road_class=0 road_speed=0 resolution 21]
+
+# Railways and lifts
+railway=* & tunnel=yes [0x2c resolution 20]
+railway=* & service=siding [0x14 resolution 23]
+railway=rail | railway=narrow_gauge [0x14 resolution 18]
+aerialway=cable_car | aerialway=gondola [0x10f01 resolution 20]
+aerialway=chair_lift [0x10f02 resolution 21]
+aerialway=drag_lift [0x10f03 resolution 22]
+aerialway=goods | man_made=goods_conveyor [0x10f04 resolution 23]
+
+# Water
+waterway=* {add mkgmap:has-direction=true}
+waterway=stream & intermittent=yes [0x10a02 resolution 23]
+# Named streams draw from res 20, but their names only from res 22 (the
+# label-less copy covers res 20-21) to keep the overview free of water labels.
+waterway=stream & name=* [0x1f resolution 22 continue]
+waterway=stream & name=* {delete name} [0x1f resolution 20-21]
+waterway=stream [0x18 resolution 22]
+waterway=ditch [0x10a03 resolution 22]
+# Names of wide rivers and lake axes: invisible line inside the water area, label only.
+water_label=yes & name=* [0x10e15 resolution 22]
+
+# Contours: only the 100 m contours are labelled; minor contours have no label (with a label,
+# tapping lists every contour line separately). Garmin treats labels of 0x20-0x22 as feet and
+# converts them to the device unit, hence m=>ft; the extended rock/scree/glacier types show
+# their label as is, so they stay in metres.
+# Glacier contours come from swissALTI3D (Vector25 has none on ice).
+contour=elevation & contour_surface=glacier & contour_ext=elevation_major {name '${ele}'} [0x10c06 resolution 20]
+contour=elevation & contour_surface=glacier [0x10c05 resolution 22]
+contour=elevation & contour_surface=rock & contour_ext=elevation_major {name '${ele}'} [0x10c02 resolution 20]
+contour=elevation & contour_surface=rock [0x10c01 resolution 22]
+contour=elevation & contour_surface=scree & contour_ext=elevation_major {name '${ele}'} [0x10c04 resolution 20]
+contour=elevation & contour_surface=scree [0x10c03 resolution 22]
+contour=elevation & contour_ext=elevation_major {name '${ele|conv:m=>ft}'} [0x22 resolution 20]
+contour=elevation [0x20 resolution 22]
+
+# Structures
+man_made=avalanche_barrier [0x10e10 resolution 22]
+barrier=wall [0x10012 resolution 24]
+man_made=pier [0x10e11 resolution 23]
+man_made=pipeline [0x28 resolution 23]
+power=line [0x29 resolution 22]
+
+boundary=administrative & admin_level=2 [0x1e resolution 12]
+
+# Crevasses traced from the Vector25 glacier drawing (glet.tif).
+natural=crevasse [0x10e12 resolution 22]
+
+<finalize>
+# Access for routing: no motor vehicles on trails and closed tracks, no
+# pedestrians or bicycles on motorways, no bicycles on mountain trails.
+(highway=path | highway=steps | highway=via_ferrata | motor_vehicle=no)
+    {add mkgmap:car=no; add mkgmap:truck=no; add mkgmap:bus=no; add mkgmap:taxi=no;
+     add mkgmap:delivery=no; add mkgmap:emergency=no; add mkgmap:carpool=no}
+(highway=steps | highway=via_ferrata | sac_scale=mountain_hiking | sac_scale=alpine_hiking)
+    {add mkgmap:bicycle=no}
+(highway=motorway | highway=motorway_link | highway=trunk)
+    {add mkgmap:foot=no; add mkgmap:bicycle=no}
+
+name=* {name '${name}'}
+highway=* & ref=* {addlabel '${ref}'}

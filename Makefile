@@ -185,6 +185,7 @@ SWISS_VECTOR24_GPKGPS=$(patsubst $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_20
 $(SWISS_VECTOR25_1_DIR)/%/smv25_chlv95ln02.gpkg: $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_2024_%_2056.gpkg.zip
 	@mkdir -p $(SWISS_VECTOR25_1_DIR)
 	unzip -u -LL $< -d $(SWISS_VECTOR25_1_DIR) || [ $$? -eq 1 ] # unzip returns 1 on warnings (due to filesep)
+	touch $@ # unzip keeps the archive timestamps
 
 swiss-vector25-gpkps: $(SWISS_VECTOR24_GPKGPS)
 
@@ -209,6 +210,7 @@ SWISS_ROCK_OSMS = $(patsubst $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_2024_%
 $(SWISS_VECTOR25_1_DIR)/%/smv25_chlv95ln02_raster/fels.tif: $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_2024_%_2056.gpkg.zip
 	@mkdir -p $(dir $@)
 	unzip -u -LL $< -d $(SWISS_VECTOR25_1_DIR) || [ $$? -eq 1 ] # unzip returns 1 on warnings (due to filesep)
+	touch $@ # unzip keeps the archive timestamps
 
 work/swiss-rock/rock_%.tif: $(SWISS_VECTOR25_1_DIR)/%/smv25_chlv95ln02_raster/fels.tif
 	@mkdir -p $(dir $@)
@@ -244,6 +246,7 @@ $(OUT_DIR)/swiss-ski-network.img: $(WORK_DIR)/swiss-skitouring/ski_network_2056_
 			--draw-priority=10 \
 			--mapname=30001001 \
 			--family-id=30001 \
+			--family-name=Outabout\ Ski\ Network \
 			--series-name=RB_S_OUTABOUT_SKI_NETWORK \
 			--area-name=RB_A_OUTABOUT_SKI_NETWORK \
 			--description=Outabout\ Swiss\ Ski\ Network \
@@ -278,6 +281,7 @@ $(OUT_DIR)/swiss-slope30.img: $(WORK_DIR)/swiss-skitouring/swiss-slope30.args to
 			--style-file=$(ROOT_DIR)/topo-ski/style \
 			--read-config=$(ROOT_DIR)/topo-ski/topo.cfg \
 			--family-id=30003 \
+			--family-name=Outabout\ Slope30 \
 			--series-name=RB_S_OUTABOUT_SKI_SLOPE30 \
 			--area-name=RB_A_OUTABOUT_SKI_SLOPE30 \
 			--description=Outabout\ Swiss\ Slope30 \
@@ -313,6 +317,7 @@ $(OUT_DIR)/swiss-rock.img: $(WORK_DIR)/swiss-rock/swiss-rock.args topo-ski/topo.
 			--style-file=$(ROOT_DIR)/topo-ski/style \
 			--read-config=$(ROOT_DIR)/topo-ski/topo.cfg \
 			--family-id=30004 \
+			--family-name=Outabout\ Rock \
 			--series-name=RB_S_OUTABOUT_SKI_ROCK \
 			--area-name=RB_A_OUTABOUT_SKI_ROCK \
 			--description=Outabout\ Swiss\ Rock \
@@ -328,6 +333,179 @@ $(OUT_DIR)/swiss-rock.img: $(WORK_DIR)/swiss-rock/swiss-rock.args topo-ski/topo.
 
 
 skitouring: $(OUT_DIR)/swiss-ski-network.img $(OUT_DIR)/swiss-slope30.img $(OUT_DIR)/swiss-rock.img
+
+# SWISS TOPO BASEMAP (swiss-map-vector25)
+#
+# Routable topo basemap built from swiss-map-vector25 instead of OSM. The
+# conversion scripts run in the conda ogr2osm env (GDAL 3.6 + numpy) and
+# write PBF through the osmium CLI. Unzipped sheets are order-only
+# prerequisites: unzip keeps the archive timestamps, and the 2024 edition
+# does not change.
+# OSM ID ranges per input file must not overlap (splitter merges them):
+#   net 1e9, feat 2e9, contour 100e9 + sheet * 1e8, rock 300e9, scree 310e9 (swissTLM3D),
+#   glacier 400e9, glacier-contour 410e9, crevasse 420e9, station 430e9.
+# Map IDs: 3005xxxx (overview 30050000, tiles from 30050001).
+
+CONDA_PYTHON = $(dir $(OGR2OSM))python
+SWISS_TOPO_DIR = $(WORK_DIR)/swiss-topo
+# Sized for a 24 GB machine: ~2 GB per parallel tile (max-jobs=3 in topo.cfg)
+# plus the gmapsupp index. A 16 GB heap made the machine swap itself to death.
+SWISS_TOPO_JAVA = java -Xms1g -Xmx6g -XX:+UseParallelGC
+SWISS_TOPO_STYLE_FILES = $(wildcard swiss-topo/style/*) swiss-topo/topo.cfg swiss-topo/swiss-topo-typ.txt
+SWISS_VECTOR25_SHEETS = $(patsubst $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_2024_%_2056.gpkg.zip,%,$(wildcard $(SWISS_VECTOR25_RAW_DIR)/*.zip))
+SWISS_VECTOR25_GPKGS = $(foreach s,$(SWISS_VECTOR25_SHEETS),$(SWISS_VECTOR25_1_DIR)/$(s)/smv25_chlv95ln02.gpkg)
+SWISS_TOPO_ROCK_GPKGS = $(foreach s,$(SWISS_VECTOR25_SHEETS),$(SWISS_TOPO_DIR)/areas/rock_$(s).gpkg)
+SWISS_TOPO_SCREE_GPKGS = $(foreach s,$(SWISS_VECTOR25_SHEETS),$(SWISS_TOPO_DIR)/areas/scree_$(s).gpkg)
+SWISS_TOPO_CREVASSE_GPKGS = $(foreach s,$(SWISS_VECTOR25_SHEETS),$(SWISS_TOPO_DIR)/crevasses/crevasse_$(s).gpkg)
+
+$(SWISS_VECTOR25_1_DIR)/%/smv25_chlv95ln02_raster/geroell.tif: $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_2024_%_2056.gpkg.zip
+	@mkdir -p $(dir $@)
+	unzip -u -LL $< -d $(SWISS_VECTOR25_1_DIR) || [ $$? -eq 1 ] # unzip returns 1 on warnings (due to filesep)
+	touch $@ # unzip keeps the archive timestamps
+
+$(SWISS_TOPO_DIR)/inventory.tsv: vector25_inventory.py | $(SWISS_VECTOR25_GPKGS)
+	@mkdir -p $(dir $@)
+	python3 -I vector25_inventory.py $(SWISS_VECTOR25_1_DIR) $@
+
+$(SWISS_TOPO_DIR)/net.osm.pbf: vector25_to_osm.py | $(SWISS_VECTOR25_GPKGS)
+	@mkdir -p $(dir $@)
+	$(CONDA_PYTHON) vector25_to_osm.py net $(SWISS_VECTOR25_1_DIR) $@
+
+$(SWISS_TOPO_DIR)/feat.osm.pbf: vector25_to_osm.py | $(SWISS_VECTOR25_GPKGS)
+	@mkdir -p $(dir $@)
+	$(CONDA_PYTHON) vector25_to_osm.py feat $(SWISS_VECTOR25_1_DIR) $@
+
+# One process for all sheets so contours on sheet edges are deduplicated.
+$(SWISS_TOPO_DIR)/contour/done: vector25_to_osm.py | $(SWISS_VECTOR25_GPKGS)
+	$(CONDA_PYTHON) vector25_to_osm.py contour $(SWISS_VECTOR25_1_DIR) $(dir $@)
+	touch $@
+
+$(SWISS_TOPO_DIR)/areas/rock_%.gpkg: vector25_raster_areas.py | $(SWISS_VECTOR25_1_DIR)/%/smv25_chlv95ln02_raster/fels.tif
+	@mkdir -p $(dir $@)
+	$(CONDA_PYTHON) vector25_raster_areas.py $| $@
+
+$(SWISS_TOPO_DIR)/areas/scree_%.gpkg: vector25_raster_areas.py | $(SWISS_VECTOR25_1_DIR)/%/smv25_chlv95ln02_raster/geroell.tif
+	@mkdir -p $(dir $@)
+	$(CONDA_PYTHON) vector25_raster_areas.py $| $@
+
+$(SWISS_TOPO_DIR)/rock.osm.pbf: $(SWISS_TOPO_DIR)/glaciers.gpkg vector25_to_osm.py
+	$(CONDA_PYTHON) vector25_to_osm.py areas rock $@ $(SWISS_TOPO_DIR)/tlm-rock.gpkg --id-base 300000000000
+
+$(SWISS_TOPO_DIR)/scree.osm.pbf: $(SWISS_TOPO_DIR)/glaciers.gpkg vector25_to_osm.py
+	$(CONDA_PYTHON) vector25_to_osm.py areas scree $@ $(SWISS_TOPO_DIR)/tlm-scree.gpkg --id-base 310000000000
+
+# Glaciers: Vector25 has no ice outlines (only name areas and a crevasse drawing), so the areas
+# come from OSM, contours on the ice from swissALTI3D, and crevasses from glet.tif.
+$(SWISS_VECTOR25_1_DIR)/%/smv25_chlv95ln02_raster/glet.tif: $(SWISS_VECTOR25_RAW_DIR)/swiss-map-vector25_2024_%_2056.gpkg.zip
+	@mkdir -p $(dir $@)
+	unzip -u -LL $< -d $(SWISS_VECTOR25_1_DIR) || [ $$? -eq 1 ] # unzip returns 1 on warnings (due to filesep)
+	touch $@ # unzip keeps the archive timestamps
+
+# Swiss Glacier Inventory 2016 (GLAMOS): official outlines incl. high firn that OSM often
+# leaves out (e.g. below the Jungfrau). Glacier areas are OSM plus SGI.
+SGI_ZIP = $(IN_DIR)/sgi2016/inventory_sgi2016_r2020.zip
+SGI_SHP = $(WORK_DIR)/sgi2016/SGI_2016_glaciers.shp
+
+$(SGI_ZIP):
+	@mkdir -p $(dir $@)
+	wget -O $@ https://doi.glamos.ch/data/inventory/inventory_sgi2016_r2020.zip
+
+$(SGI_SHP): $(SGI_ZIP)
+	@mkdir -p $(dir $@)
+	unzip -o -q $< -d $(dir $@)
+	touch $@ # unzip keeps the archive timestamps
+
+# Named glacier outlines from OSM and SGI; only used to name the swissTLM3D ice areas.
+$(SWISS_TOPO_DIR)/glacier-names.gpkg: $(IN_DIR)/switzerland-latest.osm.pbf $(SGI_SHP)
+	@mkdir -p $(dir $@)
+	osmium tags-filter --overwrite -o $(SWISS_TOPO_DIR)/glaciers-osm.osm.pbf $< nwr/natural=glacier
+	rm -f $@
+	$(dir $(OGR2OSM))ogr2ogr -f GPKG -t_srs EPSG:2056 -nln glaciers -nlt MULTIPOLYGON \
+		-where "natural='glacier'" $@ $(SWISS_TOPO_DIR)/glaciers-osm.osm.pbf multipolygons
+	$(dir $(OGR2OSM))ogr2ogr -f GPKG -append -t_srs EPSG:2056 -nln glaciers -nlt MULTIPOLYGON \
+		-sql "SELECT name FROM SGI_2016_glaciers" $@ $(SGI_SHP)
+
+# swissTLM3D (swisstopo landscape model, revised yearly): rock, scree, glacier and snowfield
+# areas from one survey. tlm_landcover.py writes all three GeoPackages in one run.
+TLM_ZIP = $(IN_DIR)/swisstlm3d/swisstlm3d_2026-02_2056_5728.gpkg.zip
+TLM_GPKG = $(WORK_DIR)/swisstlm3d/SWISSTLM3D_2026_LV95_LN02.gpkg
+
+$(TLM_ZIP):
+	@mkdir -p $(dir $@)
+	wget -O $@ https://data.geo.admin.ch/ch.swisstopo.swisstlm3d/swisstlm3d_2026-02/swisstlm3d_2026-02_2056_5728.gpkg.zip
+
+$(TLM_GPKG): $(TLM_ZIP)
+	@mkdir -p $(dir $@)
+	unzip -o -q $< -d $(dir $@)
+	touch $@ # unzip keeps the archive timestamps
+
+$(SWISS_TOPO_DIR)/glaciers.gpkg: $(TLM_GPKG) $(SWISS_TOPO_DIR)/glacier-names.gpkg tlm_landcover.py
+	$(CONDA_PYTHON) tlm_landcover.py $(TLM_GPKG) $(SWISS_TOPO_DIR)/glacier-names.gpkg \
+		$(SWISS_TOPO_DIR)/tlm-rock.gpkg $(SWISS_TOPO_DIR)/tlm-scree.gpkg $@
+
+# Train stations (Vector25 has none): swissTLM3D rail stops, one point per name. Tram stops are
+# named "Town, Stop", train stations "Town Station", so names with a comma are left out.
+$(SWISS_TOPO_DIR)/stations.gpkg: $(TLM_GPKG)
+	rm -f $@
+	$(dir $(OGR2OSM))ogr2ogr -f GPKG -dim XY -nln stations -nlt POINT -dialect SQLITE \
+		-sql "SELECT name, ST_Centroid(ST_Collect(geom)) AS geom FROM tlm_oev_haltestelle WHERE objektart = 'Haltestelle Bahn' AND name NOT LIKE '%,%' GROUP BY name" \
+		$@ $(TLM_GPKG)
+
+$(SWISS_TOPO_DIR)/station.osm.pbf: $(SWISS_TOPO_DIR)/stations.gpkg vector25_to_osm.py
+	$(CONDA_PYTHON) vector25_to_osm.py areas station $@ $< --id-base 430000000000
+
+$(SWISS_TOPO_DIR)/glacier.osm.pbf: $(SWISS_TOPO_DIR)/glaciers.gpkg vector25_to_osm.py
+	$(CONDA_PYTHON) vector25_to_osm.py areas glacier $@ $< --id-base 400000000000
+
+$(SWISS_TOPO_DIR)/glacier-contours.gpkg: $(SWISS_TOPO_DIR)/glaciers.gpkg glacier_contours.py | $(SWISSALTI3D_MERGED_FILES) $(SWISS_VECTOR25_GPKGS)
+	$(CONDA_PYTHON) glacier_contours.py --vector25-dir $(SWISS_VECTOR25_1_DIR) $< $@ $(SWISSALTI3D_MERGED_FILES)
+
+$(SWISS_TOPO_DIR)/glacier-contour.osm.pbf: $(SWISS_TOPO_DIR)/glacier-contours.gpkg vector25_to_osm.py
+	$(CONDA_PYTHON) vector25_to_osm.py areas glacier-contour $@ $< --id-base 410000000000
+
+$(SWISS_TOPO_DIR)/crevasses/crevasse_%.gpkg: vector25_crevasses.py | $(SWISS_VECTOR25_1_DIR)/%/smv25_chlv95ln02_raster/glet.tif
+	@mkdir -p $(dir $@)
+	$(CONDA_PYTHON) vector25_crevasses.py $| $@
+
+$(SWISS_TOPO_DIR)/crevasse.osm.pbf: $(SWISS_TOPO_CREVASSE_GPKGS) vector25_to_osm.py
+	$(CONDA_PYTHON) vector25_to_osm.py areas crevasse $@ $(SWISS_TOPO_CREVASSE_GPKGS) --id-base 420000000000
+
+$(SWISS_TOPO_DIR)/split/done: $(SWISS_TOPO_DIR)/net.osm.pbf $(SWISS_TOPO_DIR)/feat.osm.pbf $(SWISS_TOPO_DIR)/contour/done $(SWISS_TOPO_DIR)/rock.osm.pbf $(SWISS_TOPO_DIR)/scree.osm.pbf $(SWISS_TOPO_DIR)/glacier.osm.pbf $(SWISS_TOPO_DIR)/glacier-contour.osm.pbf $(SWISS_TOPO_DIR)/crevasse.osm.pbf $(SWISS_TOPO_DIR)/station.osm.pbf $(SPLITTER)/splitter.jar
+	rm -rf $(dir $@)
+	mkdir -p $(dir $@)
+	# splitter reads the inputs as one stream: list them in ascending ID order.
+	java -Xmx6g -jar $(SPLITTER)/splitter.jar --mapid=30050001 --output-dir=$(dir $@) \
+		$(SWISS_TOPO_DIR)/net.osm.pbf $(SWISS_TOPO_DIR)/feat.osm.pbf \
+		$(SWISS_TOPO_DIR)/contour/contour_*.osm.pbf \
+		$(SWISS_TOPO_DIR)/rock.osm.pbf $(SWISS_TOPO_DIR)/scree.osm.pbf \
+		$(SWISS_TOPO_DIR)/glacier.osm.pbf $(SWISS_TOPO_DIR)/glacier-contour.osm.pbf \
+		$(SWISS_TOPO_DIR)/crevasse.osm.pbf $(SWISS_TOPO_DIR)/station.osm.pbf
+	touch $@ # splitter writes template.args before it finishes
+
+$(OUT_DIR)/swiss-topo.img: $(SWISS_TOPO_DIR)/split/done $(SWISS_TOPO_STYLE_FILES) $(MKGMAP)/mkgmap.jar
+	@mkdir -p $(OUT_DIR)
+	@cmd="cd $(SWISS_TOPO_DIR)/split; \
+		$(SWISS_TOPO_JAVA) -Dlog.config=$(ROOT_DIR)/logging.properties \
+		    -jar $(ROOT_DIR)/$(MKGMAP)/mkgmap.jar \
+			--style-file=$(ROOT_DIR)/swiss-topo/style \
+			--read-config=$(ROOT_DIR)/swiss-topo/topo.cfg \
+			--mapname=30050000 \
+			--description=Outabout\ Swiss\ Topo\ $$(date +%Y-%m-%d_%H%M) \
+			--area-name=RB_A_SWISS_TOPO \
+			--series-name=RB_S_SWISS_TOPO \
+			--overview-mapname=RB_O_SWISS_TOPO \
+			--overview-mapnumber=30050000 \
+			--read-config=template.args \
+			$(ROOT_DIR)/swiss-topo/swiss-topo-typ.txt \
+			"; \
+	cmd=$$(echo $$cmd | sed 's/  */ /g'); \
+	echo "($$cmd)"; \
+	bash -c "$$cmd" && \
+	mv $(SWISS_TOPO_DIR)/split/gmapsupp.img $@ # only on success, keeps the previous map otherwise
+
+swisstopo: $(OUT_DIR)/swiss-topo.img
+
+.PHONY: swisstopo
 
 all: $(foreach country,$(COUNTRIES),$(OUT_DIR)/osm-oa-$(country).img)
 

@@ -39,6 +39,10 @@ make skitouring
 make out/swiss-ski-network.img
 make out/swiss-slope30.img
 make out/swiss-rock.img
+
+# Build the routable Swiss topo basemap from swiss-map-vector25
+make swisstopo            # -> out/swiss-topo.img
+make work/swiss-topo/inventory.tsv   # category counts used for the tag mapping
 ```
 
 ### Data Download and Setup
@@ -127,6 +131,21 @@ Merges hundreds of 2m-resolution SwissALTI3D tiles into a manageable grid (defau
 
 **Dynamic Make Rule Generation**: Running with `--print-make-rules` generates makefile fragments that define dependencies for each merged tile, enabling parallel builds.
 
+### vector25_to_osm.py (Swiss Topo Basemap)
+
+Converts the swiss-map-vector25 GeoPackages (`work/swiss-vector25/<sheet>/smv25_chlv95ln02.gpkg`) to OSM PBF with OSM-style tags, so mkgmap can build `out/swiss-topo.img`. It runs in the conda ogr2osm Python (`CONDA_PYTHON`) and streams XML into `osmium cat`. It does not use ogr2osm, because the national data (1.9M road segments, 2M buildings, 5.6M contours) doesn't fit in memory that way.
+
+- `net`: roads, trails, railways, and lifts of all sheets in **one** file. Nodes are shared by coordinate, so the network is routable across sheet edges.
+- `feat`: other features (land cover, water, buildings, names, POIs).
+- `contour`: contours, one file per sheet. Contours carry `contour_surface=rock|scree` from the `OBERFLAECH` field.
+- `areas`: rock and scree polygons produced by `vector25_raster_areas.py`.
+
+Sheets overlap: features crossing sheet edges are stored whole in each sheet and are deduplicated by `DKM_UUID`. Each output file has a disjoint OSM ID range (see the Makefile comment) because splitter merges them. Huts are named buildings in T48 and are tagged from their name (`Cabane ... CAS`, `...hütte`, `Bivacco ...`). Glaciers come from the `DKM25_GELAENDENAME` "Gletscher" name polygons.
+
+### vector25_raster_areas.py
+
+The Vector25 rasters `fels.tif` and `geroell.tif` are cartographic drawings (hachures and dot patterns), not area masks. This script computes ink density on a 5 m grid, smooths and thresholds it, then sieves, polygonizes, and simplifies the result into rock or scree areas. The same approach doesn't work for `glet.tif`, which only contains crevasse strokes.
+
 ### find_nearby_peaks.py (Ski Route Enhancement)
 
 Queries a PostgreSQL/PostGIS database to find nearby peaks for ski routes and adds peak names to the OSM data.
@@ -150,6 +169,14 @@ Specialized style for ski touring and avalanche terrain visualization:
 - Displays slope30 polygons (avalanche-prone terrain)
 - Shows rock features and terrain hazards
 - Includes custom TYP file (`topo-typ.txt`) for Garmin device styling
+
+### swiss-topo/ (Swiss Topo Basemap)
+
+Lean style for the tags emitted by `vector25_to_osm.py` (not general OSM):
+- Trails are routable and use one type per Swiss hiking class: `0x0e` yellow (T1), `0x0f` red (T2–T3), `0x10` blue (T4+).
+- Roads and tracks that are also hiking trails get a display-only overlay line (`0x10e01`–`0x10e03`).
+- Contours on rock and scree use extended types with labels in metres. The standard contour types use `m=>ft`, because Garmin treats those labels as feet.
+- `swiss-topo-typ.txt` uses saturated colours for MIP watch displays. Family ID 30005, map IDs 3005xxxx.
 
 ## Directory Structure
 

@@ -1,0 +1,58 @@
+# -------------------------------------------------------------------
+# Points for the Swiss topo (Vector25) map.
+# POIs for areas (huts on buildings, glacier names, camp sites) come from
+# add-pois-to-areas in topo.cfg.
+# -------------------------------------------------------------------
+
+# Places
+place=village [0x0900 resolution 20]
+place=suburb [0x0a00 resolution 22]
+place=neighbourhood [0x0b00 resolution 23]
+place=region [0x1e00 resolution 18]
+place=island [0x650c resolution 21]
+# Field and local names are dense (270k); keep them to the closest zooms so
+# they do not crowd out town and peak labels.
+place=locality & rank=2 [0x6605 resolution 23]
+place=locality [0x6605 resolution 24]
+
+# Terrain. Elevations go through the height filter, like the OA style: it appends them with the
+# separator Garmin devices use to show a POI's elevation (in feet, converted for display).
+natural=peak & rank=1 {name '${name|def:}${ele|height:m=>ft|def:}'} [0x6616 resolution 20]
+natural=peak & rank=2 {name '${name|def:}${ele|height:m=>ft|def:}'} [0x6616 resolution 22]
+natural=peak {name '${name|def:}${ele|height:m=>ft|def:}'} [0x6616 resolution 23]
+mountain_pass=yes {name '${name|def:}${ele|height:m=>ft|def:}'} [0x6406 resolution 21]
+# Named glacier areas show their name on tap; the Vector25 name points below
+# are the labels, so no extra POI from add-pois-to-areas.
+natural=glacier & mkgmap:area2poi=true {deletealltags}
+natural=glacier & name=* [0x650a resolution 20]
+natural=ridge [0x6614 resolution 22]
+natural=mountain_range [0x6614 resolution 19]
+natural=valley & rank=3 [0x6617 resolution 24]
+natural=valley [0x6617 resolution 21]
+natural=spot_height {name '${ele|height:m=>ft}'} [0x6300 resolution 24]
+natural=stone [0x6614 resolution 24]
+natural=sinkhole [0x6603 resolution 24]
+natural=cave_entrance [0x6601 resolution 23]
+natural=spring [0x6511 resolution 23]
+
+# Huts and shelters
+tourism=alpine_hut [0x2b02 resolution 19]
+tourism=wilderness_hut [0x2b07 resolution 20]
+tourism=camp_site [0x2b03 resolution 22]
+
+# Transport
+railway=station [0x2f17 resolution 21]
+aerialway=station [0x2f17 resolution 22]
+amenity=ferry_terminal [0x2f08 resolution 22]
+
+# Landmarks
+# Own type for summit crosses (Garmin has none; 0x6411 is 'tower').
+summit:cross=yes [0x6417 resolution 23]
+amenity=place_of_worship [0x2c0b resolution 23]
+historic=wayside_shrine | historic=memorial [0x2c02 resolution 24]
+amenity=fountain [0x5000 resolution 23]
+man_made=tower | man_made=mast | man_made=chimney | power=generator [0x6411 resolution 24]
+man_made=survey_point [0x6300 resolution 24]
+
+<finalize>
+name=* {name '${name}'}

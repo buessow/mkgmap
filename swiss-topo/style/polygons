@@ -1,0 +1,45 @@
+# -------------------------------------------------------------------
+# Polygons for the Swiss topo (Vector25) map.
+# Draw order is set in swiss-topo-typ.txt ([_drawOrder]).
+# -------------------------------------------------------------------
+
+# Lake names only from res 21; the label-less copy covers the zoomed-out levels.
+natural=water & water=lake & area_size() > 1000000 [0x3c resolution 21 continue]
+natural=water & water=lake & area_size() > 1000000 {delete name} [0x3c resolution 14-20]
+natural=water & water=lake [0x3c resolution 21 continue]
+natural=water & water=lake {delete name} [0x3c resolution 19-20]
+natural=water & water=river [0x46 resolution 19]
+natural=water & water=basin [0x3f resolution 22]
+leisure=swimming_pool [0x3f resolution 23]
+
+# Rock, scree, glaciers and snowfields from the swissTLM3D land cover. Standard (not extended)
+# area types: the Fenix ignores the TYP for extended areas and draws its own defaults.
+natural=glacier & glacier:type=snowfield [0x59 resolution 19]
+natural=glacier [0x4d resolution 17]
+natural=bare_rock & density=sparse [0x55 resolution 20]
+natural=bare_rock [0x54 resolution 19]
+natural=boulders [0x58 resolution 20]
+natural=scree & density=sparse [0x57 resolution 20]
+natural=scree [0x56 resolution 19]
+landuse=forest [0x50 resolution 18]
+
+landuse=vineyard | landuse=orchard | landuse=plant_nursery | landuse=allotments [0x4e resolution 21]
+landuse=cemetery [0x1a resolution 22]
+leisure=park [0x17 resolution 22]
+leisure=golf_course [0x18 resolution 21]
+leisure=sports_centre | leisure=pitch | tourism=camp_site | tourism=zoo [0x19 resolution 22]
+amenity=parking [0x05 resolution 23]
+amenity=hospital [0x0b resolution 22]
+power=substation | landuse=landfill | waterway=dam | waterway=weir [0x0c resolution 22]
+aeroway=runway | aeroway=heliport [0x0e resolution 20]
+
+# Skip mkgmap's small-polygon filter (min-size-polygon), which drops houses
+# at every level except res 24.
+# Escarpments are thin strips; skip the small-polygon filter like for houses.
+natural=earth_bank {add mkgmap:skipSizeFilter=true} [0x5a resolution 22]
+
+building=* {add mkgmap:skipSizeFilter=true} [0x13 resolution 23]
+
+<finalize>
+# Area names (glaciers, lakes, huts on buildings): shown on tap on the watch.
+name=* {name '${name}'}
