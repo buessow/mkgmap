@@ -42,7 +42,7 @@ make out/swiss-rock.img
 
 # Build the routable Swiss topo basemap from swiss-map-vector25
 make swisstopo            # -> out/swiss-topo.img
-make work/swiss-topo/inventory.tsv   # category counts used for the tag mapping
+make work/swiss-topo/inventory.tsv   # Vector25 category counts (reference)
 ```
 
 ### Data Download and Setup
@@ -131,20 +131,29 @@ Merges hundreds of 2m-resolution SwissALTI3D tiles into a manageable grid (defau
 
 **Dynamic Make Rule Generation**: Running with `--print-make-rules` generates makefile fragments that define dependencies for each merged tile, enabling parallel builds.
 
-### vector25_to_osm.py (Swiss Topo Basemap)
+### Swiss Topo Basemap (`make swisstopo` -> `out/swiss-topo.img`)
 
-Converts the swiss-map-vector25 GeoPackages (`work/swiss-vector25/<sheet>/smv25_chlv95ln02.gpkg`) to OSM PBF with OSM-style tags, so mkgmap can build `out/swiss-topo.img`. It runs in the conda ogr2osm Python (`CONDA_PYTHON`) and streams XML into `osmium cat`. It does not use ogr2osm, because the national data (1.9M road segments, 2M buildings, 5.6M contours) doesn't fit in memory that way.
+A routable basemap for Garmin watches built from swisstopo data instead of OSM. Sources:
 
-- `net`: roads, trails, railways, and lifts of all sheets in **one** file. Nodes are shared by coordinate, so the network is routable across sheet edges.
-- `feat`: other features (land cover, water, buildings, names, POIs).
-- `contour`: contours, one file per sheet. Contours carry `contour_surface=rock|scree` from the `OBERFLAECH` field.
-- `areas`: rock and scree polygons produced by `vector25_raster_areas.py`.
+| Content | Source | Script |
+|---|---|---|
+| Roads, paths, railways, lifts, water, buildings, names, POIs, contours | swiss-map-vector25 (2024), 58 sheets | `vector25_to_osm.py` |
+| Rock, sparse rock, boulders, scree, glaciers, snowfields | swissTLM3D land cover (`tlm_bb_bodenbedeckung`, revised 2019-2025) | `tlm_landcover.py` |
+| Glacier names | OSM `natural=glacier` + Swiss Glacier Inventory 2016 (GLAMOS), largest overlap | `tlm_landcover.py` |
+| Contours on and next to glaciers (Vector25 has none on ice) | swissALTI3D | `glacier_contours.py` |
+| Crevasses | Vector25 raster `glet.tif` | `vector25_crevasses.py` |
+| Train stations (Vector25 has none) | swissTLM3D `tlm_oev_haltestelle`, names without a comma (tram stops are "Town, Stop") | Makefile `stations.gpkg` rule |
 
-Sheets overlap: features crossing sheet edges are stored whole in each sheet and are deduplicated by `DKM_UUID`. Each output file has a disjoint OSM ID range (see the Makefile comment) because splitter merges them. Huts are named buildings in T48 and are tagged from their name (`Cabane ... CAS`, `...hütte`, `Bivacco ...`). Glaciers come from the `DKM25_GELAENDENAME` "Gletscher" name polygons.
+`vector25_to_osm.py` runs in the conda ogr2osm Python (`CONDA_PYTHON`) and streams OSM XML into `osmium cat` (ogr2osm cannot hold the national data in memory). It maps Vector25 attributes to OSM-style tags (its own mapping, no OSM road data): `OBJEKTART` (width/way type), `BEDEUTUNG` (Durchgangsstrasse -> primary, Verbindungsstrasse -> secondary), `WANDERWEG` (`sac_scale`), `KUNSTBAUTE` (tunnel, bridge, steps), `BELAGSART` (paved/unpaved), `BEFAHRBAR`.
 
-### vector25_raster_areas.py
+- `net`: roads, paths, railways, lifts of all sheets in one file; nodes shared by coordinate so routing works across sheet edges.
+- `feat`: everything else. Watercourse lines are split at river/lake areas: outside they stay lines, inside only a label-only line keeps the name (Vector25, like OSM, has wide rivers as area and centre line).
+- `contour`: one file per sheet; `contour_surface=rock|scree` from `OBERFLAECH`.
+- `areas`: GeoPackages from the other scripts (rock, scree, glacier, glacier-contour, crevasse, station).
 
-The Vector25 rasters `fels.tif` and `geroell.tif` are cartographic drawings (hachures and dot patterns), not area masks. This script computes ink density on a 5 m grid, smooths and thresholds it, then sieves, polygonizes, and simplifies the result into rock or scree areas. The same approach doesn't work for `glet.tif`, which only contains crevasse strokes.
+Sheets overlap: features crossing a sheet edge are repeated in the neighbour sheet and skipped by `DKM_UUID` if already read from another sheet. Within one sheet a `DKM_UUID` can span several rows (pieces of one way), which must all be kept. Each output file has a disjoint OSM ID range (Makefile comment); splitter reads the inputs as one stream, so they are listed in ascending ID order.
+
+`vector25_raster_areas.py` (rock/scree areas from the Vector25 hachure and dot rasters) and `vector25_inventory.py` (category counts, `make work/swiss-topo/inventory.tsv`) are no longer part of the build but kept for reference.
 
 ### find_nearby_peaks.py (Ski Route Enhancement)
 
@@ -172,11 +181,16 @@ Specialized style for ski touring and avalanche terrain visualization:
 
 ### swiss-topo/ (Swiss Topo Basemap)
 
-Lean style for the tags emitted by `vector25_to_osm.py` (not general OSM):
-- Trails are routable and use one type per Swiss hiking class: `0x0e` yellow (T1), `0x0f` red (T2–T3), `0x10` blue (T4+).
-- Roads and tracks that are also hiking trails get a display-only overlay line (`0x10e01`–`0x10e03`).
-- Contours on rock and scree use extended types with labels in metres. The standard contour types use `m=>ft`, because Garmin treats those labels as feet.
-- `swiss-topo-typ.txt` uses saturated colours for MIP watch displays. Family ID 30005, map IDs 3005xxxx.
+Style and TYP for the tags emitted by `vector25_to_osm.py`, modelled on the swisstopo national map legend and tuned for the Fenix 7 (MIP display, 64 colours: channels 00/55/AA/FF). Family ID 30005, map IDs 3005xxxx; the build date is in the map description (shown in the watch's map info).
+
+Findings from testing on the Fenix 7:
+- The watch ignores the TYP for **extended area types** (0x1xxxx) and draws its own defaults (e.g. "Ferry"), so all areas use standard types; free codes 0x54-0x5a hold rock, scree, boulders, snowfield, escarpment. Extended line types work.
+- **Display-only overlay lines** are drawn under routable roads, so tunnels use their own routable types (0x08 major, 0x0c minor) with the road's `road_class`/`road_speed`. Bridge casings (0x10e16) on paths/tracks work because the casing is wider than the way.
+- Only **lines and city-type points** (0x0100-0x1100) get their names printed; other POIs show the name on tap only.
+- Line patterns may only use **two colours** (incl. transparent); more makes the TYP compile fail (mkgmap exits at the end without a clear message; test with `java -jar mkgmap.jar --family-id=30005 swiss-topo/swiss-topo-typ.txt`).
+- Labels of standard contour types 0x20-0x22 are treated as feet (`conv:m=>ft`); minor contours have no label (with a label, tapping lists every line separately).
+- mkgmap drops small areas except at res 24 (`min-size-polygon`); houses and escarpments use `mkgmap:skipSizeFilter`.
+- Activity profiles have their own map settings (stored in `GARMIN/Sports/*.fit`, field 29 of message 70 = map theme, e.g. `Resort_Ski`); a theme overrides TYP colours.
 
 ## Directory Structure
 
@@ -217,12 +231,16 @@ java -Xms5g -Xmx16g -XX:+UseParallelGC -jar mkgmap.jar ...
 
 Adjust these values if building fails with OutOfMemoryError or if working on a system with different RAM constraints.
 
+The swiss-topo build uses `SWISS_TOPO_JAVA` (`-Xmx6g`) and `max-jobs=3` in `swiss-topo/topo.cfg`: with a 16 GB heap and one job per core it swapped a 24 GB Mac into a crash. Run long builds with `caffeinate -s make swisstopo` on AC power; the Mac otherwise sleeps mid-build.
+
 ## Data Sources
 
 - **OSM Data**: Geofabrik Europe extracts (https://download.geofabrik.de/europe/)
 - **Contour Lines**: Freizeitkarte contour data (http://develop.freizeitkarte-osm.de/ele_20_100_500/)
 - **SwissALTI3D**: Swiss Federal Office of Topography (2m resolution DEM)
-- **Swiss Vector25**: Swiss topographic vector data (rock features)
+- **Swiss Vector25**: swiss-map-vector25 2024 (roads, paths, water, names, POIs, contours; rock rasters for the ski overlay)
+- **swissTLM3D**: swisstopo landscape model 2026-02 (land cover, stations): https://data.geo.admin.ch/ch.swisstopo.swisstlm3d/
+- **Swiss Glacier Inventory 2016**: GLAMOS (glacier names): https://doi.glamos.ch/data/inventory/inventory_sgi2016_r2020.zip
 - **Ski Routes**: Swiss Topo ski touring data (data.geo.admin.ch)
 
 ## Deployment
@@ -233,7 +251,7 @@ Compiled maps can be copied directly to a Garmin device:
 make /Volumes/GARMIN/Garmin/swiss-ski-network.img
 ```
 
-The Makefile includes a pattern rule for copying `out/*.img` to `/Volumes/GARMIN/Garmin/*.img`.
+The Makefile includes a pattern rule for copying `out/*.img` to `/Volumes/GARMIN/Garmin/*.img`. The Fenix 7 connects over MTP rather than as a disk, so copy maps with an MTP tool (e.g. OpenMTP) into `GARMIN/` on the watch, deleting the old copy first. For BaseCamp on the Mac, the swiss-topo and ski maps also build `.gmap` bundles (`gmapi`), symlinked into `~/Library/Application Support/Garmin/Maps/`.
 
 ## Troubleshooting
 
