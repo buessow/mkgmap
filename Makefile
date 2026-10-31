@@ -505,7 +505,25 @@ $(OUT_DIR)/swiss-topo.img: $(SWISS_TOPO_DIR)/split/done $(SWISS_TOPO_STYLE_FILES
 
 swisstopo: $(OUT_DIR)/swiss-topo.img
 
-.PHONY: swisstopo
+# Publish the existing Swiss outputs without starting a map rebuild.
+# gh creates the tag on GitHub at the current commit when it creates the release.
+GITHUB_REPO ?= buessow/mkgmap
+RELEASE_TAG ?= swiss-$(shell date -u +%Y%m%dT%H%M%SZ)
+
+publish-swiss:
+	@set -eu; \
+	set -- $(OUT_DIR)/swiss-*; \
+	if [ ! -f "$$1" ]; then echo "No $(OUT_DIR)/swiss-* files to publish" >&2; exit 1; fi; \
+	command -v gh >/dev/null || { echo "GitHub CLI (gh) is required" >&2; exit 1; }; \
+	gh release create "$(RELEASE_TAG)" "$$@" \
+		--repo "$(GITHUB_REPO)" \
+		--target "$$(git rev-parse HEAD)" \
+		--title "Swiss maps $(RELEASE_TAG)" \
+		--notes "Swiss map files."
+
+publish-swiss-topo: publish-swiss
+
+.PHONY: swisstopo publish-swiss publish-swiss-topo
 
 all: $(foreach country,$(COUNTRIES),$(OUT_DIR)/osm-oa-$(country).img)
 
